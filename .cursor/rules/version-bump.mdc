@@ -1,0 +1,19 @@
+---
+description: Bump Book of the End version on every code change
+alwaysApply: true
+---
+
+# Version bump on code changes
+
+When modifying Book of the End source, installer, or build scripts, increment the patch version (e.g. 2.4.3 → 2.4.4) in **all** of these locations:
+
+- `src/BookOfTheEnd/BookOfTheEnd.csproj` — `Version`, `FileVersion`, `AssemblyVersion`
+- `src/BookOfTheEnd/MainWindow.xaml` — title bar `vX.Y.Z` text
+- `src/BookOfTheEnd/Views/SettingsWindow.xaml` — About version text
+- `installer/Package.wxs` — `Version="X.Y.Z.0"`
+- `installer/Bundle.wxs` — `Version="X.Y.Z.0"`
+- `build/build-installer.ps1` — default `$Version`
+- `installer/BookOfTheEnd.Installer.wixproj` — `OutputName`
+- `installer/BookOfTheEnd.Bundle.wixproj` — `OutputName` and `MsiPath`
+
+Use the same version string everywhere. Do not skip the bump for “small” changes.

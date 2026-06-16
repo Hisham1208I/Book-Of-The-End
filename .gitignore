@@ -1,0 +1,31 @@
+## Build output
+bin/
+obj/
+publish/
+dist/
+installer/redist/
+out/
+.wix/
+
+## Local / scratch
+dummy
+smoke_*.txt
+**/test*.ico
+**/debug.ico
+
+## Cursor (local editor config)
+.cursor/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider
+*.DotSettings.user
+
+## Logs / local artifacts
+*.log

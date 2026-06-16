@@ -1,0 +1,456 @@
+﻿<Window x:Class="BookOfTheEnd.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:controls="clr-namespace:BookOfTheEnd.Controls"
+        Title="Book of the End — Data Recovery"
+        Height="800" Width="1320" MinHeight="660" MinWidth="1120"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize"
+        Background="{DynamicResource BackgroundBrush}"
+        TextOptions.TextFormattingMode="Display"
+        FontFamily="Segoe UI"
+        StateChanged="OnWindowStateChanged"
+        PreviewKeyDown="OnWindowPreviewKeyDown">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- ===== Title bar ===== -->
+            <Border Grid.Row="0" Background="{DynamicResource TitleBarBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                        <controls:AppLogo LogoSize="18" VerticalAlignment="Center" />
+                        <TextBlock Text="Book of the End" FontWeight="SemiBold" Margin="10,0,0,0"
+                                   VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="v2.4.3" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                        <Button Style="{StaticResource ChromeIconButton}" Content="&#xE793;"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                Command="{Binding ToggleThemeCommand}" ToolTip="Toggle theme"
+                                VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <Button x:Name="MinButton" Style="{StaticResource WindowControlButton}" Content="&#xE921;"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="OnMinimize" ToolTip="Minimize" />
+                        <Button x:Name="MaxButton" Style="{StaticResource WindowControlButton}" Content="&#xE922;"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="OnMaximizeRestore" ToolTip="Maximize" />
+                        <Button x:Name="CloseButton" Style="{StaticResource WindowCloseButton}" Content="&#xE8BB;"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="OnClose" ToolTip="Close" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== Resizable layout: Drives | Scan/Results | Preview ===== -->
+            <Grid Grid.Row="1" Grid.RowSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280" MinWidth="200" MaxWidth="440" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" MinWidth="360" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="320" MinWidth="220" MaxWidth="560" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Drives header -->
+                <Grid Grid.Row="0" Grid.Column="0" Margin="18,8,8,0">
+                    <TextBlock Text="Drives" Style="{StaticResource H2}" VerticalAlignment="Center" />
+                    <Button Content="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                            HorizontalAlignment="Right" Padding="8,4" Command="{Binding RefreshDrivesCommand}"
+                            ToolTip="Refresh drives" />
+                </Grid>
+
+                <!-- Tabs + settings -->
+                <Grid Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3" Margin="8,0,16,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ToggleButton Content="Scan" Style="{StaticResource TabButton}"
+                                      IsChecked="{Binding IsScanTab, Mode=OneWay}"
+                                      Command="{Binding ShowScanTabCommand}" />
+                        <ToggleButton Style="{StaticResource TabButton}"
+                                      IsChecked="{Binding IsResultsTab, Mode=OneWay}"
+                                      Command="{Binding ShowResultsTabCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Results" />
+                                <Border Background="{DynamicResource AccentMutedBrush}" CornerRadius="9" Padding="6,1"
+                                        Margin="6,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ResultCount, Mode=OneWay}" FontSize="11"
+                                               Foreground="{DynamicResource AccentBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </ToggleButton>
+                    </StackPanel>
+
+                    <Button Style="{StaticResource ChromeIconButton}" Content="&#xE713;"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Command="{Binding ShowSettingsCommand}" ToolTip="Settings" />
+                </Grid>
+
+                <!-- Drives sidebar -->
+                <ListBox Grid.Row="1" Grid.Column="0" Margin="12,4,4,8" ItemsSource="{Binding DrivesView}"
+                         SelectedItem="{Binding SelectedDrive, Mode=TwoWay}"
+                         ItemContainerStyle="{StaticResource DriveItem}"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Style="{StaticResource GroupHeaderText}">
+                                        <Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" (" /><Run Text="{Binding ItemCount, Mode=OneWay}" /><Run Text=")" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListBox.GroupStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding DeviceGlyph}" Style="{StaticResource GlyphText}"
+                                                   FontSize="18" Foreground="{DynamicResource AccentBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Letter}" FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text=":" FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="{Binding VolumeLabel, TargetNullValue='Local Disk'}"
+                                                           Margin="6,0,0,0" Style="{StaticResource Body}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                        <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                 Fill="{Binding Status, Converter={StaticResource DotBrush}}" />
+                                        <TextBlock Text="{Binding StatusLabel}" Style="{StaticResource Caption}" Margin="5,0,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <ProgressBar Grid.Row="1" Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100"
+                                             Height="5" Margin="0,8,0,5" />
+
+                                <Grid Grid.Row="2">
+                                    <TextBlock Text="{Binding SpecsLine}" Style="{StaticResource Caption}" />
+                                    <TextBlock Text="{Binding TotalSizeShort}" Style="{StaticResource Caption}"
+                                               HorizontalAlignment="Right" />
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <GridSplitter Grid.Row="1" Grid.Column="1" Style="{StaticResource LayoutSplitter}" />
+
+                <!-- Center: Scan tab -->
+                <ScrollViewer Grid.Row="1" Grid.Column="2" Margin="4,4,4,8" VerticalScrollBarVisibility="Auto"
+                              Visibility="{Binding IsScanTab, Converter={StaticResource BoolVis}}">
+                    <StackPanel>
+                        <Border Style="{StaticResource Card}" Padding="12" Margin="0,0,0,14"
+                                DataContext="{Binding SelectedDrive}"
+                                Visibility="{Binding Converter={StaticResource NullVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding DeviceGlyph}" Style="{StaticResource GlyphText}" FontSize="20"
+                                           Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold">
+                                        <Run Text="{Binding RootPath, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding VolumeLabel, Mode=OneWay, TargetNullValue=''}" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource Caption}">
+                                        <Run Text="{Binding ConnectionDisplay, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding SpecsLine, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding CapacityDisplay, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Scan mode" Style="{StaticResource Caption}" Margin="2,0,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="14" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <RadioButton Grid.Column="0" Style="{StaticResource ScanModeCard}" GroupName="scanmode"
+                                         IsChecked="{Binding IsQuickScan, Mode=TwoWay}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE945;" Style="{StaticResource GlyphText}" FontSize="18"
+                                                   Foreground="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="Quick Scan" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Text="MFT-based recovery of recently deleted files"
+                                               Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                    <TextBlock Text="{Binding QuickEstimate}" Style="{StaticResource Caption}"
+                                               Foreground="{DynamicResource AccentBrush}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Grid.Column="2" Style="{StaticResource ScanModeCard}" GroupName="scanmode"
+                                         IsChecked="{Binding IsDeepScan, Mode=TwoWay}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE773;" Style="{StaticResource GlyphText}" FontSize="18"
+                                                   Foreground="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="Deep Scan" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Text="Sector-by-sector signature carving, formatted drives"
+                                               Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                    <TextBlock Text="{Binding DeepEstimate}" Style="{StaticResource Caption}"
+                                               Foreground="{DynamicResource AccentBrush}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </RadioButton>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0" VerticalAlignment="Center">
+                            <Button Style="{StaticResource AccentButton}" Command="{Binding StartScanCommand}"
+                                    Content="{Binding StartButtonText}" MinWidth="170" />
+                            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="5" Padding="8,3" Margin="10,0,0,0">
+                                <TextBlock Text="Space" Style="{StaticResource Caption}" />
+                            </Border>
+                            <TextBlock Text="&#x2190; Select a drive to begin" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Center" Margin="12,0,0,0"
+                                       Visibility="{Binding ShowSelectDriveHint, Converter={StaticResource BoolVis}}" />
+                        </StackPanel>
+
+                        <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE728;" Style="{StaticResource GlyphText}" FontSize="15"
+                                                   Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Scan Presets" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <TextBlock HorizontalAlignment="Right" Style="{StaticResource Caption}"
+                                               Text="{Binding Presets.Count, StringFormat='{}{0} saved'}" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Presets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource PresetCard}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0" Text="{Binding Glyph}" Style="{StaticResource GlyphText}"
+                                                               FontSize="20" Foreground="{DynamicResource AccentBrush}"
+                                                               VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                                                        <Border Style="{StaticResource Chip}" Margin="0,4,0,4">
+                                                            <TextBlock Text="{Binding TagLabel}" Style="{StaticResource ChipText}" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Button Content="&#x25B6; Run" Style="{StaticResource AccentButton}" MinWidth="74"
+                                                                Command="{Binding DataContext.RunPresetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}" />
+                                                        <Button Content="&#xE74D;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                                                Margin="6,0,0,0" Padding="9,6" ToolTip="Delete preset"
+                                                                Command="{Binding DataContext.DeletePresetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Button Content="&#x2B; New preset" Command="{Binding NewPresetCommand}"
+                                        HorizontalAlignment="Stretch" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Center: Results tab -->
+                <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}" Margin="4,4,4,8"
+                        Visibility="{Binding IsResultsTab, Converter={StaticResource BoolVis}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource H2}" VerticalAlignment="Center">
+                                <Run Text="Results" /><Run Text=" (" /><Run Text="{Binding ResultCount, Mode=OneWay}" /><Run Text=")" />
+                            </TextBlock>
+                            <TextBox Grid.Column="1" Margin="14,0" VerticalAlignment="Center"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Search by name, type, or path" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Button Content="Recover Selected" Command="{Binding RecoverSelectedCommand}" />
+                                <Button Content="Recover All" Style="{StaticResource AccentButton}"
+                                        Command="{Binding RecoverAllCommand}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
+                                Padding="12,10" Margin="0,0,0,10"
+                                Visibility="{Binding IsScanning, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Style="{StaticResource Caption}" Text="{Binding CurrentActivity}" />
+                                    <TextBlock Style="{StaticResource Caption}" HorizontalAlignment="Right">
+                                        <Run Text="{Binding ProgressPercent, StringFormat={}{0:0}%, Mode=OneWay}" />
+                                        <Run Text="  ·  ETA " /><Run Text="{Binding EtaText, Mode=OneWay}" />
+                                        <Run Text="  ·  " /><Run Text="{Binding ElapsedText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Grid>
+                                <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Command="{Binding PauseResumeCommand}" Width="120">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Content" Value="&#x23F8; Pause" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPaused}" Value="True">
+                                                        <Setter Property="Content" Value="&#x25B6; Resume" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Content="&#x23F9; Cancel" Command="{Binding CancelScanCommand}" Margin="8,0,0,0" Width="110" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <DataGrid x:Name="ResultsGrid" Grid.Row="2" ItemsSource="{Binding ResultsView}"
+                                  SelectionChanged="OnResultsSelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="" Width="36" CanUserSort="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Category, Converter={StaticResource Glyph}}"
+                                                       FontSize="15" HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Name" Binding="{Binding FileName}" Width="2*" />
+                                <DataGridTextColumn Header="Type" Binding="{Binding Extension}" Width="70" />
+                                <DataGridTextColumn Header="Size" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="90" />
+                                <DataGridTemplateColumn Header="Status" Width="130" SortMemberPath="Status">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StatusDisplay}"
+                                                       Foreground="{Binding Status, Converter={StaticResource StatusBrush}}"
+                                                       FontWeight="SemiBold" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Quality" Width="80" SortMemberPath="Quality">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Quality}"
+                                                       Foreground="{Binding Quality, Converter={StaticResource QualityBrush}}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Modified" Binding="{Binding Modified, Converter={StaticResource Date}}" SortMemberPath="Modified" Width="130" />
+                                <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="90" />
+                                <DataGridTextColumn Header="Original Path" Binding="{Binding OriginalPath}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <GridSplitter Grid.Row="1" Grid.Column="3" Style="{StaticResource LayoutSplitter}" />
+
+                <!-- Preview (always visible; drag splitter to resize) -->
+                <Border Grid.Row="1" Grid.Column="4" Style="{StaticResource Card}" Margin="4,4,16,8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Preview" Style="{StaticResource H2}" Margin="0,0,0,10" />
+
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8">
+                            <Grid>
+                                <TextBlock x:Name="PreviewMessage" Style="{StaticResource Caption}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" TextAlignment="Center" Margin="20"
+                                           Visibility="Collapsed"
+                                           Text="Select a file in Results to preview it before recovery." />
+                                <TextBlock x:Name="ScanTabHint" Style="{StaticResource Caption}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" TextAlignment="Center" Margin="20"
+                                           Text="Switch to the Results tab after scanning to preview recovered files." />
+                                <Image x:Name="ImageView" Stretch="Uniform" Margin="6" Visibility="Collapsed" />
+                                <TextBox x:Name="TextView" Visibility="Collapsed" IsReadOnly="True"
+                                         FontFamily="Consolas" FontSize="12" Background="Transparent"
+                                         BorderThickness="0" TextWrapping="NoWrap"
+                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                                <MediaElement x:Name="MediaView" Visibility="Collapsed" LoadedBehavior="Manual"
+                                              UnloadedBehavior="Stop" Stretch="Uniform"
+                                              ScrubbingEnabled="True" MediaOpened="OnMediaOpened" />
+                                <wv2:WebView2 x:Name="PdfView" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0"
+                                    x:Name="MediaControls" Visibility="Collapsed">
+                            <Button Content="&#x25B6; Play" Click="OnMediaPlay" Width="90" />
+                            <Button Content="&#x23F8; Pause" Click="OnMediaPause" Margin="8,0,0,0" Width="90" />
+                            <Button Content="&#x23F9; Stop" Click="OnMediaStop" Margin="8,0,0,0" Width="90" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===== Status bar ===== -->
+            <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,1,0,0" Padding="16,8">
+                <Grid>
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                    <TextBlock HorizontalAlignment="Right" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                               Text="{Binding DrivesDetectedText}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

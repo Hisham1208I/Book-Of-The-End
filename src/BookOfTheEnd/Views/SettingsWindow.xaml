@@ -1,0 +1,52 @@
+<Window x:Class="BookOfTheEnd.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings - Book of the End"
+        Width="460" Height="430"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}"
+        FontFamily="Segoe UI">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Settings" Style="{StaticResource H1}" Margin="0,0,0,14" />
+
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Appearance" Style="{StaticResource H2}" Margin="0,0,0,6" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <RadioButton x:Name="LightRadio" Content="Light (white + purple)" GroupName="theme"
+                             Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,18,0"
+                             Checked="OnThemeChanged" />
+                <RadioButton x:Name="DarkRadio" Content="Dark (black + gold)" GroupName="theme"
+                             Foreground="{DynamicResource TextPrimaryBrush}" Checked="OnThemeChanged" />
+            </StackPanel>
+
+            <TextBlock Text="Recovery" Style="{StaticResource H2}" Margin="0,0,0,6" />
+            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,16"
+                       Text="Recovered files are written to the destination you choose at recovery time. Book of the End never writes to the source drive by default." />
+
+            <TextBlock Text="Local data" Style="{StaticResource H2}" Margin="0,0,0,6" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Button Content="Open logs folder" Click="OnOpenLogs" Width="150" />
+                <Button Content="Open reports folder" Click="OnOpenReports" Width="160" Margin="8,0,0,0" />
+            </StackPanel>
+            <Button Content="View disclaimer" Click="OnShowDisclaimer" Width="150" HorizontalAlignment="Left" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2">
+            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8" Padding="12" Margin="0,8,0,12">
+                <StackPanel>
+                    <TextBlock Text="Book of the End — Data Recovery v2.4.3" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                    <TextBlock Text="Offline · Local processing only · Windows 10/11" Style="{StaticResource Caption}" />
+                </StackPanel>
+            </Border>
+            <Button Content="Close" Style="{StaticResource AccentButton}" Width="110"
+                    HorizontalAlignment="Right" Click="OnClose" />
+        </StackPanel>
+    </Grid>
+</Window>

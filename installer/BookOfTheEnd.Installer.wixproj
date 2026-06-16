@@ -1,0 +1,22 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputPath>..\dist\</OutputPath>
+    <OutputName>BookOfTheEnd-2.4.3-x64</OutputName>
+    <DefineConstants>PublishDir=$(MSBuildThisFileDirectory)..\publish\</DefineConstants>
+    <SuppressIces>ICE80</SuppressIces>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Package.wxs" />
+  </ItemGroup>
+
+  <!-- Publish the app before packaging (skipped when build-installer.ps1 already published). -->
+  <Target Name="PublishApp" BeforeTargets="Build" Condition="'$(SkipPublishApp)' != 'true'">
+    <Exec Command="dotnet publish ..\src\BookOfTheEnd\BookOfTheEnd.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o ..\publish\" />
+  </Target>
+</Project>
