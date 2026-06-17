@@ -50,7 +50,7 @@
         <StackPanel Grid.Row="2">
             <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8" Padding="12" Margin="0,8,0,12">
                 <StackPanel>
-                    <TextBlock Text="Book of the End — Data Recovery v2.4.6" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                    <TextBlock Text="Book of the End — Data Recovery v2.4.7" Style="{StaticResource Body}" FontWeight="SemiBold" />
                     <TextBlock Text="Offline · Local processing only · Windows 10/11" Style="{StaticResource Caption}" />
                 </StackPanel>
             </Border>

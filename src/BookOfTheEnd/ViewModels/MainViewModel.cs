@@ -4,7 +4,9 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Threading;
 using BookOfTheEnd.Models;
+using BookOfTheEnd.Models.Health;
 using BookOfTheEnd.Services;
+using BookOfTheEnd.Services.Health;
 using BookOfTheEnd.Services.Scanning;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,6 +22,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ThemeService _themeService;
     private readonly PresetService _presetService;
     private readonly UpdateService _updateService;
+    private readonly StorageHealthService _storageHealth;
     private readonly LoggingService _log;
 
     private ScanController? _controller;
@@ -45,6 +48,8 @@ public sealed partial class MainViewModel : ObservableObject
     public ICollectionView ResultsView { get; }
     public ObservableCollection<ScanPresetViewModel> Presets { get; } = new();
 
+    public HealthViewModel Health { get; }
+
     public MainViewModel(
         DriveDetectionService driveService,
         PreviewService previewService,
@@ -52,6 +57,8 @@ public sealed partial class MainViewModel : ObservableObject
         ThemeService themeService,
         PresetService presetService,
         UpdateService updateService,
+        StorageHealthService storageHealth,
+        SurfaceScanService surfaceScan,
         LoggingService log)
     {
         _driveService = driveService;
@@ -60,7 +67,10 @@ public sealed partial class MainViewModel : ObservableObject
         _themeService = themeService;
         _presetService = presetService;
         _updateService = updateService;
+        _storageHealth = storageHealth;
         _log = log;
+
+        Health = new HealthViewModel(storageHealth, surfaceScan, log);
 
         DrivesView = CollectionViewSource.GetDefaultView(Drives);
         DrivesView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(DriveModel.GroupName)));
@@ -77,15 +87,18 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsScanTab => ActiveTab == AppTab.Scan;
     public bool IsResultsTab => ActiveTab == AppTab.Results;
+    public bool IsHealthTab => ActiveTab == AppTab.Health;
 
     partial void OnActiveTabChanged(AppTab value)
     {
         OnPropertyChanged(nameof(IsScanTab));
         OnPropertyChanged(nameof(IsResultsTab));
+        OnPropertyChanged(nameof(IsHealthTab));
     }
 
     [RelayCommand] private void ShowScanTab() => ActiveTab = AppTab.Scan;
     [RelayCommand] private void ShowResultsTab() => ActiveTab = AppTab.Results;
+    [RelayCommand] private void ShowHealthTab() => ActiveTab = AppTab.Health;
 
     // --- Drive selection / scan config ---
     [ObservableProperty]
@@ -94,6 +107,8 @@ public sealed partial class MainViewModel : ObservableObject
     private DriveModel? _selectedDrive;
 
     public bool ShowSelectDriveHint => SelectedDrive is null;
+
+    partial void OnSelectedDriveChanged(DriveModel? value) => Health.SetDrive(value);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StartButtonText))]
@@ -195,6 +210,8 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
+        if (!await ConfirmRecoverySafetyAsync(drive)) return;
+
         _results.Clear();
         lock (_pendingGate) _pending.Clear();
         _totalFound = 0;
@@ -249,6 +266,38 @@ public sealed partial class MainViewModel : ObservableObject
             _controller = null;
             OnPropertyChanged(nameof(ResultCount));
         }
+    }
+
+    /// <summary>
+    /// Warns the user before scanning a drive that shows signs of failure, since reading
+    /// from failing media can worsen the damage. Returns false if the user cancels.
+    /// </summary>
+    private async Task<bool> ConfirmRecoverySafetyAsync(DriveModel drive)
+    {
+        var health = Health.CurrentHealth;
+        if (health is null || !string.Equals(health.DriveLetter, drive.Letter, StringComparison.OrdinalIgnoreCase))
+        {
+            try { health = await _storageHealth.EvaluateAsync(drive); }
+            catch (Exception ex) { _log.Warn($"Pre-scan health check failed: {ex.Message}"); return true; }
+        }
+
+        bool risky = health.DataAvailable &&
+                     (health.ClonePriority is ClonePriority.High or ClonePriority.Emergency
+                      || health.Status is HealthStatus.Critical or HealthStatus.Failing);
+        if (!risky) return true;
+
+        bool proceed = Views.AppDialogWindow.ShowConfirm(
+            Application.Current.MainWindow,
+            "Drive shows signs of failure",
+            health.Readiness.Recommendation,
+            $"{health.Readiness.Reason}\n\nReading from a failing drive can worsen the damage. " +
+            "The safest approach is to clone/image the drive first and recover from the copy.",
+            confirmText: "Scan anyway",
+            cancelText: "Cancel");
+
+        if (!proceed)
+            StatusMessage = "Scan cancelled. Cloning the drive first is the safest option.";
+        return proceed;
     }
 
     private bool CanControlScan() => IsScanning;

@@ -4,6 +4,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:controls="clr-namespace:BookOfTheEnd.Controls"
+        xmlns:views="clr-namespace:BookOfTheEnd.Views"
         Title="Book of the End — Data Recovery"
         Height="800" Width="1320" MinHeight="660" MinWidth="1120"
         WindowStartupLocation="CenterScreen"
@@ -38,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.4.6" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.4.7" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -97,6 +98,9 @@
                                 </Border>
                             </StackPanel>
                         </ToggleButton>
+                        <ToggleButton Content="Health" Style="{StaticResource TabButton}"
+                                      IsChecked="{Binding IsHealthTab, Mode=OneWay}"
+                                      Command="{Binding ShowHealthTabCommand}" />
                     </StackPanel>
 
                     <Button Style="{StaticResource ChromeIconButton}" Content="&#xE713;"
@@ -187,6 +191,26 @@
                                         <Run Text="{Binding ConnectionDisplay, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding SpecsLine, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding CapacityDisplay, Mode=OneWay}" />
                                     </TextBlock>
                                 </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Recovery-safety banner: shown when the drive is not recovery-ready -->
+                        <Border CornerRadius="8" Padding="12,10" Margin="0,0,0,14"
+                                Background="{DynamicResource SurfaceAltBrush}"
+                                BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1"
+                                DataContext="{Binding Health.CurrentHealth}"
+                                Visibility="{Binding Readiness, Converter={StaticResource ReadinessVis}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7BA;" Style="{StaticResource GlyphText}" FontSize="15"
+                                               Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Recovery safety" Style="{StaticResource H2}" Margin="8,0,0,0"
+                                               Foreground="{DynamicResource DangerBrush}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Readiness.Recommendation}" Style="{StaticResource Body}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0" />
+                                <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                           Text="Open the Health tab for full diagnostics." />
                             </StackPanel>
                         </Border>
 
@@ -395,6 +419,11 @@
                         </DataGrid>
                     </Grid>
                 </Border>
+
+                <!-- Center: Health tab -->
+                <views:HealthView Grid.Row="1" Grid.Column="2" Margin="4,4,4,8"
+                                  DataContext="{Binding Health}"
+                                  Visibility="{Binding DataContext.IsHealthTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolVis}}" />
 
                 <GridSplitter Grid.Row="1" Grid.Column="3" Style="{StaticResource LayoutSplitter}" />
 

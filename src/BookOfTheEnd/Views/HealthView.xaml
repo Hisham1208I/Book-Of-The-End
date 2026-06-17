@@ -1,0 +1,231 @@
+<UserControl x:Class="BookOfTheEnd.Views.HealthView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="Segoe UI">
+    <Grid>
+        <!-- Placeholder when no drive is selected -->
+        <TextBlock Style="{StaticResource Caption}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" Margin="20"
+                   Visibility="{Binding HasHealth, Converter={StaticResource BoolVisInv}}"
+                   Text="Select a drive to view its storage health and recovery readiness." />
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding HasHealth, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="2">
+
+                <!-- Header -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="&#xEDA2;" Style="{StaticResource GlyphText}" FontSize="24"
+                                   Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentHealth.TitleDisplay}" Style="{StaticResource H1}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Style="{StaticResource Caption}">
+                                <Run Text="{Binding CurrentHealth.DriveLetter, Mode=OneWay}" /><Run Text=":  ·  " /><Run Text="{Binding CurrentHealth.KindDisplay, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding CurrentHealth.InterfaceDisplay, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding CurrentHealth.CapacityDisplay, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding StatusNote}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                Padding="9,6" VerticalAlignment="Top" Command="{Binding RefreshCommand}"
+                                ToolTip="Refresh now" />
+                    </Grid>
+                </Border>
+
+                <!-- No-data notice -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        Visibility="{Binding HasSmartData, Converter={StaticResource BoolVisInv}}">
+                    <StackPanel>
+                        <TextBlock Text="SMART data unavailable" Style="{StaticResource H2}" />
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Text="{Binding CurrentHealth.Smart.Note}" />
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Text="This is common on USB bridges, virtual machines, or when not running as Administrator. You can still run a read-only surface scan below." />
+                    </StackPanel>
+                </Border>
+
+                <!-- Metric cards -->
+                <UniformGrid Columns="3">
+                    <!-- Drive Health -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                        <StackPanel>
+                            <TextBlock Text="DRIVE HEALTH" Style="{StaticResource Caption}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Text="{Binding CurrentHealth.HealthScore}" FontSize="30" FontWeight="SemiBold"
+                                           Foreground="{Binding CurrentHealth.Status, Converter={StaticResource HealthBrush}}" />
+                                <TextBlock Text="/100" Style="{StaticResource Caption}" VerticalAlignment="Bottom" Margin="3,0,0,6" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding CurrentHealth.StatusLabel}" FontWeight="SemiBold"
+                                       Foreground="{Binding CurrentHealth.Status, Converter={StaticResource HealthBrush}}" />
+                            <ProgressBar Value="{Binding CurrentHealth.HealthScore, Mode=OneWay}" Maximum="100"
+                                         Height="5" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Temperature -->
+                    <Border Style="{StaticResource Card}" Margin="3,0,3,12">
+                        <StackPanel>
+                            <TextBlock Text="TEMPERATURE" Style="{StaticResource Caption}" />
+                            <TextBlock Text="{Binding CurrentHealth.TemperatureDisplay}" FontSize="30" FontWeight="SemiBold"
+                                       Margin="0,6,0,0" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Current drive temperature" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Recovery Risk -->
+                    <Border Style="{StaticResource Card}" Margin="6,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="RECOVERY RISK" Style="{StaticResource Caption}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Text="{Binding CurrentHealth.Readiness.RiskScore}" FontSize="30" FontWeight="SemiBold"
+                                           Foreground="{Binding CurrentHealth.ClonePriority, Converter={StaticResource CloneBrush}}" />
+                                <TextBlock Text="/100" Style="{StaticResource Caption}" VerticalAlignment="Bottom" Margin="3,0,0,6" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding CurrentHealth.RiskLabel}" FontWeight="SemiBold"
+                                       Foreground="{Binding CurrentHealth.ClonePriority, Converter={StaticResource CloneBrush}}" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- Clone recommendation -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BA;" Style="{StaticResource GlyphText}" FontSize="16"
+                                       Foreground="{Binding CurrentHealth.ClonePriority, Converter={StaticResource CloneBrush}}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Clone Recommendation" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                            <Border CornerRadius="9" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center"
+                                    Background="{Binding CurrentHealth.ClonePriority, Converter={StaticResource CloneBrush}}">
+                                <TextBlock Text="{Binding CurrentHealth.ClonePriorityLabel}" FontSize="11"
+                                           Foreground="White" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding CurrentHealth.Readiness.Recommendation}" Style="{StaticResource Body}"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" />
+                        <TextBlock Text="{Binding CurrentHealth.Readiness.Reason}" Style="{StaticResource Caption}"
+                                   TextWrapping="Wrap" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- SSD life + SMART attributes -->
+                <UniformGrid Columns="2">
+                    <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                        <StackPanel>
+                            <TextBlock Text="SSD WEAR / REMAINING LIFE" Style="{StaticResource Caption}" />
+                            <TextBlock Text="{Binding CurrentHealth.RemainingLifeDisplay}" FontSize="26" FontWeight="SemiBold"
+                                       Margin="0,6,0,0" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding CurrentHealth.WearDisplay}" Style="{StaticResource Caption}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="6,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="SMART ATTRIBUTES" Style="{StaticResource Caption}" Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Power-on hours" Style="{StaticResource Caption}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentHealth.PowerOnHoursDisplay}" Style="{StaticResource Body}" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Power cycles" Style="{StaticResource Caption}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentHealth.PowerCyclesDisplay}" Style="{StaticResource Body}" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Reallocated sectors" Style="{StaticResource Caption}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentHealth.ReallocatedDisplay}" Style="{StaticResource Body}" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Pending sectors" Style="{StaticResource Caption}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CurrentHealth.PendingDisplay}" Style="{StaticResource Body}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- Findings -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Findings" Style="{StaticResource H2}" Margin="0,0,0,8" />
+                        <ItemsControl ItemsSource="{Binding CurrentHealth.Findings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <Ellipse Width="6" Height="6" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                 Fill="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="{Binding}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Surface scan -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE9D9;" Style="{StaticResource GlyphText}" FontSize="15"
+                                           Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Surface Scan (read-only)" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Run surface scan" Style="{StaticResource AccentButton}"
+                                        Command="{Binding RunSurfaceScanCommand}"
+                                        Visibility="{Binding IsSurfaceScanning, Converter={StaticResource BoolVisInv}}" />
+                                <Button Content="&#x23F9; Cancel" Command="{Binding CancelSurfaceScanCommand}"
+                                        Visibility="{Binding IsSurfaceScanning, Converter={StaticResource BoolVis}}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Samples blocks across the volume and times each read. Never writes - safe to run before recovery."
+                                   Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0" />
+
+                        <ProgressBar Value="{Binding SurfaceProgress, Mode=OneWay}" Maximum="100" Height="6" Margin="0,10,0,6"
+                                     Visibility="{Binding IsSurfaceScanning, Converter={StaticResource BoolVis}}" />
+                        <TextBlock Text="{Binding SurfaceActivity}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+
+                        <!-- Sector map -->
+                        <ItemsControl ItemsSource="{Binding SurfaceBlocks}" Margin="0,10,0,0"
+                                      Visibility="{Binding HasSurfaceResult, Converter={StaticResource BoolVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Rectangle Width="11" Height="11" Margin="1" RadiusX="2" RadiusY="2"
+                                               Fill="{Binding Status, Converter={StaticResource SectorBrush}}"
+                                               ToolTip="{Binding Status}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
+                                    Visibility="{Binding HasSurfaceResult, Converter={StaticResource BoolVis}}">
+                            <Rectangle Width="11" Height="11" RadiusX="2" RadiusY="2" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Healthy" Style="{StaticResource Caption}" Margin="5,0,14,0" VerticalAlignment="Center" />
+                            <Rectangle Width="11" Height="11" RadiusX="2" RadiusY="2" Fill="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Slow" Style="{StaticResource Caption}" Margin="5,0,14,0" VerticalAlignment="Center" />
+                            <Rectangle Width="11" Height="11" RadiusX="2" RadiusY="2" Fill="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Bad" Style="{StaticResource Caption}" Margin="5,0,14,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding SurfaceSummary}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

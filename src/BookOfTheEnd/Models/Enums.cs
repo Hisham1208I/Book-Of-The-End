@@ -31,7 +31,8 @@ public enum DriveStatus
 public enum AppTab
 {
     Scan,
-    Results
+    Results,
+    Health
 }
 
 public enum FileCategory

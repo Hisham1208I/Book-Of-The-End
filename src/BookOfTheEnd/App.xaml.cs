@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
 using BookOfTheEnd.Services;
+using BookOfTheEnd.Services.Health;
 using BookOfTheEnd.ViewModels;
 
 namespace BookOfTheEnd;
@@ -31,7 +32,14 @@ public partial class App : Application
         var presets = new PresetService(_log);
         var updates = new UpdateService(_log);
 
-        var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, updates, _log);
+        var smart = new SmartDataService(_log);
+        var analysis = new HealthAnalysisService();
+        var readiness = new RecoveryReadinessService();
+        var storageHealth = new StorageHealthService(smart, analysis, readiness, _log);
+        var surfaceScan = new SurfaceScanService(_log);
+
+        var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, updates,
+            storageHealth, surfaceScan, _log);
         var window = new MainWindow { DataContext = viewModel };
         window.Show();
 

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <OutputType>Bundle</OutputType>
     <OutputPath>..\dist\</OutputPath>
-    <OutputName>BookOfTheEnd-2.4.6-x64-Setup</OutputName>
-    <DefineConstants>MsiPath=$(MSBuildThisFileDirectory)..\dist\BookOfTheEnd-2.4.6-x64.msi</DefineConstants>
+    <OutputName>BookOfTheEnd-2.4.7-x64-Setup</OutputName>
+    <DefineConstants>MsiPath=$(MSBuildThisFileDirectory)..\dist\BookOfTheEnd-2.4.7-x64.msi</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using BookOfTheEnd.Models;
+using BookOfTheEnd.Models.Health;
 
 namespace BookOfTheEnd.Converters;
 
@@ -115,5 +116,64 @@ public sealed class StatusToBrushConverter : IValueConverter
         } : "TextSecondaryBrush";
         return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
     }
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
+}
+
+public sealed class HealthStatusToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is HealthStatus s ? s switch
+        {
+            HealthStatus.Excellent => "SuccessBrush",
+            HealthStatus.Good => "SuccessBrush",
+            HealthStatus.Warning => "WarningBrush",
+            HealthStatus.Critical => "DangerBrush",
+            HealthStatus.Failing => "DangerBrush",
+            _ => "TextSecondaryBrush"
+        } : "TextSecondaryBrush";
+        return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
+    }
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
+}
+
+public sealed class ClonePriorityToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is ClonePriority p ? p switch
+        {
+            ClonePriority.Low => "SuccessBrush",
+            ClonePriority.Moderate => "WarningBrush",
+            ClonePriority.High => "DangerBrush",
+            ClonePriority.Emergency => "DangerBrush",
+            _ => "TextSecondaryBrush"
+        } : "TextSecondaryBrush";
+        return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
+    }
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
+}
+
+public sealed class SectorStatusToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is SectorStatus s ? s switch
+        {
+            SectorStatus.Healthy => "SuccessBrush",
+            SectorStatus.Slow => "WarningBrush",
+            SectorStatus.Bad => "DangerBrush",
+            _ => "BorderBrush"
+        } : "BorderBrush";
+        return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
+    }
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
+}
+
+/// <summary>Hides a recovery-readiness banner when the drive is ready (RecoveryReady == true).</summary>
+public sealed class ReadinessToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+        => value is RecoveryReadiness r && !r.RecoveryReady ? Visibility.Visible : Visibility.Collapsed;
     public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
 }
