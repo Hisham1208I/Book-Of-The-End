@@ -9,7 +9,7 @@
 
   <Bundle Name="Book of the End"
           Manufacturer="Book of the End"
-          Version="2.4.3.0"
+          Version="2.4.6.0"
           UpgradeCode="8E4B3D2C-1A09-4F5E-9C6D-3B7A8E0F1D22"
           IconSourceFile="..\src\BookOfTheEnd\app.ico">
 
@@ -41,7 +41,10 @@
                   SourceFile="$(var.MsiPath)"
                   DisplayName="Book of the End"
                   Compressed="yes"
-                  Vital="yes" />
+                  Vital="yes">
+        <!-- Marker so the MSI can refuse to install unless launched from this bundle. -->
+        <MsiProperty Name="INSTALLEDFROMBUNDLE" Value="1" />
+      </MsiPackage>
 
       <!-- WebView2 runs after the app; use /install (not /silent) so its UI stays visible if needed. -->
       <ExePackage Id="WebView2Runtime"

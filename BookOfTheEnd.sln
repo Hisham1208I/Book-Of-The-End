@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "installer", "installer", "{
 EndProject
 Project("{93C6BA47-8487-4638-A8A7-C84E83F4C4CA}") = "BookOfTheEnd.Installer", "installer\BookOfTheEnd.Installer.wixproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookOfTheEnd.Cli", "src\BookOfTheEnd.Cli\BookOfTheEnd.Cli.csproj", "{9B841B08-94F9-4CBE-88D7-29977F003731}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B841B08-94F9-4CBE-88D7-29977F003731}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B841B08-94F9-4CBE-88D7-29977F003731}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B841B08-94F9-4CBE-88D7-29977F003731}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B841B08-94F9-4CBE-88D7-29977F003731}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2712C267-F1C2-4E17-9BCD-9E321CB26F42} = {805260AB-BB29-4155-AA7C-B9CEE64F12A7}
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901} = {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+		{9B841B08-94F9-4CBE-88D7-29977F003731} = {805260AB-BB29-4155-AA7C-B9CEE64F12A7}
 	EndGlobalSection
 EndGlobal

@@ -9,7 +9,7 @@
 param(
     [ValidateSet("Release", "Debug")]
     [string]$Configuration = "Release",
-    [string]$Version = "2.4.3",
+    [string]$Version = "2.4.6",
     [switch]$SkipSign,
     [switch]$SkipWebView2Download
 )

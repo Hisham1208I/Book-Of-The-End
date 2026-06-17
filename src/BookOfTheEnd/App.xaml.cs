@@ -29,12 +29,16 @@ public partial class App : Application
         _preview = new PreviewService(content, _log);
         var recovery = new RecoveryService(content, _log);
         var presets = new PresetService(_log);
+        var updates = new UpdateService(_log);
 
-        var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, _log);
+        var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, updates, _log);
         var window = new MainWindow { DataContext = viewModel };
         window.Show();
 
         viewModel.Initialize();
+
+        // Non-blocking: only surfaces a prompt if a newer release is published.
+        _ = viewModel.CheckForUpdatesOnStartupAsync();
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

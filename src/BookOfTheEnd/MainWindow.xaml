@@ -38,7 +38,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.4.3" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.4.6" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 

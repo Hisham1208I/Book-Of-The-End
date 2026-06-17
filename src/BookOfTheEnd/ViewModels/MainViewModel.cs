@@ -19,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly RecoveryService _recoveryService;
     private readonly ThemeService _themeService;
     private readonly PresetService _presetService;
+    private readonly UpdateService _updateService;
     private readonly LoggingService _log;
 
     private ScanController? _controller;
@@ -29,6 +30,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     private readonly ObservableCollection<RecoverableFileViewModel> _results = new();
     private IReadOnlyList<RecoverableFileViewModel> _selectedFiles = Array.Empty<RecoverableFileViewModel>();
+
+    /// <summary>
+    /// Upper bound on results kept in memory. System drives (e.g. C:) can hold a huge
+    /// number of deleted MFT records; without a cap the result set exhausts memory and
+    /// the process dies. When reached, the scan is stopped gracefully.
+    /// </summary>
+    private const int MaxResults = 50_000;
+    private int _totalFound;
+    private bool _capReached;
 
     public ObservableCollection<DriveModel> Drives { get; } = new();
     public ICollectionView DrivesView { get; }
@@ -41,6 +51,7 @@ public sealed partial class MainViewModel : ObservableObject
         RecoveryService recoveryService,
         ThemeService themeService,
         PresetService presetService,
+        UpdateService updateService,
         LoggingService log)
     {
         _driveService = driveService;
@@ -48,6 +59,7 @@ public sealed partial class MainViewModel : ObservableObject
         _recoveryService = recoveryService;
         _themeService = themeService;
         _presetService = presetService;
+        _updateService = updateService;
         _log = log;
 
         DrivesView = CollectionViewSource.GetDefaultView(Drives);
@@ -184,6 +196,9 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         _results.Clear();
+        lock (_pendingGate) _pending.Clear();
+        _totalFound = 0;
+        _capReached = false;
         OnPropertyChanged(nameof(ResultCount));
         CurrentPreview = null;
         FilesFound = 0;
@@ -208,8 +223,16 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Scan cancelled.";
-            CurrentActivity = "Scan cancelled.";
+            if (_capReached)
+            {
+                StatusMessage = $"Stopped at {MaxResults:N0} results (limit reached). Narrow the file types or use a smaller drive to see more.";
+                CurrentActivity = $"Result limit ({MaxResults:N0}) reached.";
+            }
+            else
+            {
+                StatusMessage = "Scan cancelled.";
+                CurrentActivity = "Scan cancelled.";
+            }
         }
         catch (Exception ex)
         {
@@ -261,7 +284,24 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnFileFound(RecoverableFile file)
     {
-        lock (_pendingGate) _pending.Add(file);
+        bool capJustReached = false;
+        lock (_pendingGate)
+        {
+            if (_capReached) return;
+            _pending.Add(file);
+            _totalFound++;
+            if (_totalFound >= MaxResults)
+            {
+                _capReached = true;
+                capJustReached = true;
+            }
+        }
+
+        if (capJustReached)
+        {
+            // Stop the scan to avoid exhausting memory on very large (system) drives.
+            _controller?.Cancel();
+        }
     }
 
     private void FlushPending()
@@ -371,12 +411,25 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowSettings()
     {
-        var win = new Views.SettingsWindow(_themeService, _log)
+        var win = new Views.SettingsWindow(_themeService, _log, _updateService)
         {
             Owner = Application.Current.MainWindow
         };
         win.ShowDialog();
         OnPropertyChanged(nameof(IsLightTheme));
+    }
+
+    /// <summary>Background check on launch; only prompts the user if an update exists.</summary>
+    public async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            await _updateService.CheckAndUpdateInteractiveAsync(Application.Current.MainWindow, silent: true);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"Startup update check failed: {ex.Message}");
+        }
     }
 
     // --- Scan presets ---

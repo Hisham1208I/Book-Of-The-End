@@ -4,7 +4,7 @@
 
   <Package Name="Book of the End"
            Manufacturer="Book of the End"
-           Version="2.4.3.0"
+           Version="2.4.6.0"
            UpgradeCode="7F3A2C1E-9B44-4E2A-8D1C-2A6F5B0E4C77"
            Scope="perMachine"
            Compressed="yes">
@@ -13,6 +13,14 @@
                         Manufacturer="Book of the End" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit." />
+
+    <!--
+      Block direct .msi installs. The bundle (Setup.exe) passes INSTALLEDFROMBUNDLE=1.
+      "Installed" keeps uninstall/repair/modify working for an already-installed product.
+    -->
+    <Property Id="INSTALLEDFROMBUNDLE" Secure="yes" />
+    <Launch Condition="INSTALLEDFROMBUNDLE OR Installed"
+            Message="Please run the Book of the End Setup.exe to install. This .msi cannot be installed on its own." />
 
     <MediaTemplate EmbedCab="yes" />
 

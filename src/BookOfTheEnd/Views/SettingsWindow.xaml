@@ -26,6 +26,15 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" Checked="OnThemeChanged" />
             </StackPanel>
 
+            <TextBlock Text="Updates" Style="{StaticResource H2}" Margin="0,0,0,6" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <Button x:Name="CheckUpdateButton" Content="Check for updates" Click="OnCheckForUpdates" Width="170" />
+                <TextBlock x:Name="UpdateStatus" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                           Margin="10,0,0,0" Text="" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,16"
+                       Text="Checks GitHub for a newer release and installs it for you." />
+
             <TextBlock Text="Recovery" Style="{StaticResource H2}" Margin="0,0,0,6" />
             <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,16"
                        Text="Recovered files are written to the destination you choose at recovery time. Book of the End never writes to the source drive by default." />
@@ -41,7 +50,7 @@
         <StackPanel Grid.Row="2">
             <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8" Padding="12" Margin="0,8,0,12">
                 <StackPanel>
-                    <TextBlock Text="Book of the End — Data Recovery v2.4.3" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                    <TextBlock Text="Book of the End — Data Recovery v2.4.6" Style="{StaticResource Body}" FontWeight="SemiBold" />
                     <TextBlock Text="Offline · Local processing only · Windows 10/11" Style="{StaticResource Caption}" />
                 </StackPanel>
             </Border>
