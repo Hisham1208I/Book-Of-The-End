@@ -43,7 +43,7 @@ public static class FileSignatures
             Footer = new byte[]{0x49,0x45,0x4E,0x44,0xAE,0x42,0x60,0x82},
             Strategy = SizeStrategy.Footer, MaxSize = 60L*1024*1024, Quality = RecoveryQuality.Excellent },
         new() { Extension = ".gif", Category = FileCategory.Image,
-            Header = new byte[]{0x47,0x49,0x46,0x38}, Footer = new byte[]{0x00,0x3B},
+            Header = new byte[]{0x47,0x49,0x46,0x38}, Footer = new byte[]{0x3B},
             Strategy = SizeStrategy.Footer, MaxSize = 30L*1024*1024 },
         new() { Extension = ".bmp", Category = FileCategory.Image,
             Header = new byte[]{0x42,0x4D}, Strategy = SizeStrategy.BmpSize, MaxSize = 40L*1024*1024 },

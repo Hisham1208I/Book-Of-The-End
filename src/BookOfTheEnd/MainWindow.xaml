@@ -39,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.4.7" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.5.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -253,6 +253,16 @@
                             </RadioButton>
                         </Grid>
 
+                        <TextBlock Text="File types" Style="{StaticResource Caption}" Margin="2,14,0,8" />
+                        <WrapPanel>
+                            <CheckBox Content="Images"    IsChecked="{Binding IncludeImages}"    Margin="0,0,16,6" />
+                            <CheckBox Content="Videos"    IsChecked="{Binding IncludeVideos}"    Margin="0,0,16,6" />
+                            <CheckBox Content="Audio"     IsChecked="{Binding IncludeAudio}"     Margin="0,0,16,6" />
+                            <CheckBox Content="Documents" IsChecked="{Binding IncludeDocuments}" Margin="0,0,16,6" />
+                            <CheckBox Content="Archives"  IsChecked="{Binding IncludeArchives}"  Margin="0,0,16,6" />
+                            <CheckBox Content="Other"     IsChecked="{Binding IncludeOther}"     Margin="0,0,0,6"  />
+                        </WrapPanel>
+
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0" VerticalAlignment="Center">
                             <Button Style="{StaticResource AccentButton}" Command="{Binding StartScanCommand}"
                                     Content="{Binding StartButtonText}" MinWidth="170" />
@@ -328,6 +338,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -381,7 +392,23 @@
                             </StackPanel>
                         </Border>
 
-                        <DataGrid x:Name="ResultsGrid" Grid.Row="2" ItemsSource="{Binding ResultsView}"
+                        <!-- Recovery progress panel -->
+                        <Border Grid.Row="2" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
+                                Padding="12,10" Margin="0,0,0,10"
+                                Visibility="{Binding IsRecovering, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Style="{StaticResource Caption}" Text="{Binding CurrentActivity}" />
+                                    <TextBlock Style="{StaticResource Caption}" HorizontalAlignment="Right"
+                                               Text="{Binding ProgressPercent, StringFormat={}{0:0}%, Mode=OneWay}" />
+                                </Grid>
+                                <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" />
+                                <Button Content="&#x23F9; Cancel recovery" Command="{Binding CancelRecoveryCommand}"
+                                        Margin="0,10,0,0" Width="150" HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Border>
+
+                        <DataGrid x:Name="ResultsGrid" Grid.Row="3" ItemsSource="{Binding ResultsView}"
                                   SelectionChanged="OnResultsSelectionChanged">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="" Width="36" CanUserSort="False">
@@ -413,6 +440,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="Modified" Binding="{Binding Modified, Converter={StaticResource Date}}" SortMemberPath="Modified" Width="130" />
+                                <DataGridTextColumn Header="Deleted" Binding="{Binding Deleted, Converter={StaticResource Date}}" SortMemberPath="Deleted" Width="130" />
                                 <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="90" />
                                 <DataGridTextColumn Header="Original Path" Binding="{Binding OriginalPath}" Width="*" />
                             </DataGrid.Columns>

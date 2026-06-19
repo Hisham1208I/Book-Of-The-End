@@ -17,6 +17,7 @@ public sealed partial class RecoverableFileViewModel : ObservableObject
     public long Size => Model.Size;
     public string SizeDisplay => Model.SizeDisplay;
     public DateTime? Modified => Model.Modified;
+    public DateTime? Deleted => Model.Deleted;
     public string OriginalPath => Model.OriginalPath ?? (Model.Source == RecoverySource.Carved ? "Unallocated space" : "—");
     public RecoverySource Source => Model.Source;
     public string SourceDisplay => Model.Source switch

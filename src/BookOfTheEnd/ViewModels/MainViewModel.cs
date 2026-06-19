@@ -30,6 +30,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly List<RecoverableFile> _pending = new();
     private readonly DispatcherTimer _flushTimer;
     private CancellationTokenSource? _previewCts;
+    private CancellationTokenSource? _recoveryCts;
 
     private readonly ObservableCollection<RecoverableFileViewModel> _results = new();
     private IReadOnlyList<RecoverableFileViewModel> _selectedFiles = Array.Empty<RecoverableFileViewModel>();
@@ -143,6 +144,10 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _isScanning;
 
     [ObservableProperty] private bool _isPaused;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CancelRecoveryCommand))]
+    private bool _isRecovering;
     [ObservableProperty] private double _progressPercent;
     [ObservableProperty] private string _currentActivity = "Ready.";
     [ObservableProperty] private string _etaText = "—";
@@ -323,6 +328,11 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanControlScan))]
     private void CancelScan() => _controller?.Cancel();
 
+    private bool CanCancelRecovery() => IsRecovering;
+
+    [RelayCommand(CanExecute = nameof(CanCancelRecovery))]
+    private void CancelRecovery() => _recoveryCts?.Cancel();
+
     private void OnProgress(ScanProgress p)
     {
         ProgressPercent = p.Percent;
@@ -405,7 +415,10 @@ public sealed partial class MainViewModel : ObservableObject
                 return;
         }
 
-        var cts = new CancellationTokenSource();
+        _recoveryCts = new CancellationTokenSource();
+        IsRecovering = true;
+        ProgressPercent = 0;
+
         var progress = new Progress<(int done, int total, string current)>(t =>
         {
             ProgressPercent = t.total == 0 ? 0 : t.done * 100.0 / t.total;
@@ -415,7 +428,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             StatusMessage = $"Recovering {models.Count} file(s)...";
-            var results = await _recoveryService.RecoverAsync(models, destination, preserveStructure: true, progress, cts.Token);
+            var results = await _recoveryService.RecoverAsync(models, destination, preserveStructure: true, progress, _recoveryCts.Token);
             foreach (var vm in selected) vm.Refresh();
 
             int ok = results.Count(r => r.Success);
@@ -430,6 +443,10 @@ public sealed partial class MainViewModel : ObservableObject
                 $"Destination:\n{destination}",
                 fail == 0 ? Views.AppDialogKind.Success : Views.AppDialogKind.Warning);
         }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Recovery cancelled.";
+        }
         catch (Exception ex)
         {
             _log.Error("Recovery failed", ex);
@@ -437,6 +454,9 @@ public sealed partial class MainViewModel : ObservableObject
         }
         finally
         {
+            IsRecovering = false;
+            _recoveryCts?.Dispose();
+            _recoveryCts = null;
             ProgressPercent = 0;
             CurrentActivity = "Ready.";
         }
