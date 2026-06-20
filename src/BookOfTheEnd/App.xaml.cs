@@ -40,9 +40,10 @@ public partial class App : Application
         var session = new SessionService(_log);
         var smartHistory = new SmartHistoryService(_log);
         var driveImage = new DriveImageService(_log);
+        var driveSpeed = new DriveSpeedService(_log);
 
         var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, updates,
-            storageHealth, surfaceScan, session, smartHistory, driveImage, _log);
+            storageHealth, surfaceScan, session, smartHistory, driveImage, driveSpeed, _log);
         var window = new MainWindow { DataContext = viewModel };
         window.Show();
 

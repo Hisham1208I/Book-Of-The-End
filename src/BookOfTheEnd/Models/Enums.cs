@@ -78,7 +78,13 @@ public enum RecoveryStatus
     Recovered,
 
     /// <summary>A recovery attempt failed.</summary>
-    Failed
+    Failed,
+
+    /// <summary>Recovered and header/footer structural validation passed.</summary>
+    Verified,
+
+    /// <summary>Recovered but structural validation failed — file may be truncated or corrupt.</summary>
+    Corrupt
 }
 
 public enum RecoveryQuality

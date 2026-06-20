@@ -18,6 +18,8 @@
     <conv:ClonePriorityToBrushConverter x:Key="CloneBrush" />
     <conv:SectorStatusToBrushConverter x:Key="SectorBrush" />
     <conv:ReadinessToVisibilityConverter x:Key="ReadinessVis" />
+    <conv:CategoryIndexConverter x:Key="CategoryIndexConverter" />
+    <conv:SizeIndexConverter x:Key="SizeIndexConverter" />
 
     <!-- Icon font shared by chrome / glyphs -->
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>

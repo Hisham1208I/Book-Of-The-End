@@ -10,9 +10,9 @@
     <AssemblyName>BookOfTheEnd</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>2.6.1</Version>
-    <FileVersion>2.6.1.0</FileVersion>
-    <AssemblyVersion>2.6.1.0</AssemblyVersion>
+    <Version>2.7.0</Version>
+    <FileVersion>2.7.0.0</FileVersion>
+    <AssemblyVersion>2.7.0.0</AssemblyVersion>
     <Product>Book of the End</Product>
     <Company>Book of the End</Company>
     <Description>Offline Windows data recovery application.</Description>

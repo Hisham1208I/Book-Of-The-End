@@ -52,7 +52,7 @@ public sealed class PreviewService
                         => MediaOrDoc(file, PreviewKind.Pdf, token),
                     FileCategory.Audio => MediaOrDoc(file, PreviewKind.Media, token),
                     FileCategory.Video => MediaOrDoc(file, PreviewKind.Media, token),
-                    _ => new PreviewResult { Kind = PreviewKind.None, File = file, Message = "No preview available for this file type." }
+                    _ => HexDump(file)
                 };
             }
             catch (Exception ex)
@@ -84,6 +84,35 @@ public sealed class PreviewService
             _content.WriteTo(file, fs, MediaCap, token);
         }
         return new PreviewResult { Kind = kind, TempFilePath = temp, File = file };
+    }
+
+    private PreviewResult HexDump(RecoverableFile file)
+    {
+        const int maxBytes = 256;
+        byte[] bytes = _content.ReadBytes(file, maxBytes);
+        if (bytes.Length == 0)
+            return new PreviewResult { Kind = PreviewKind.None, File = file, Message = "File appears to be empty." };
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Hex preview — first {bytes.Length} bytes of {file.SizeDisplay}");
+        sb.AppendLine();
+        for (int row = 0; row < bytes.Length; row += 16)
+        {
+            sb.Append($"{row:X4}  ");
+            int end = Math.Min(row + 16, bytes.Length);
+            for (int i = row; i < end; i++)
+                sb.Append($"{bytes[i]:X2} ");
+            for (int i = end; i < row + 16; i++)
+                sb.Append("   ");
+            sb.Append(" ");
+            for (int i = row; i < end; i++)
+            {
+                char c = (char)bytes[i];
+                sb.Append(c >= 0x20 && c < 0x7F ? c : '.');
+            }
+            sb.AppendLine();
+        }
+        return new PreviewResult { Kind = PreviewKind.Text, Text = sb.ToString(), File = file };
     }
 
     private static bool IsText(string ext) =>

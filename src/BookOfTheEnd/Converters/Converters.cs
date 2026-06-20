@@ -107,11 +107,13 @@ public sealed class StatusToBrushConverter : IValueConverter
     {
         string key = value is RecoveryStatus s ? s switch
         {
-            RecoveryStatus.Recoverable => "SuccessBrush",
-            RecoveryStatus.Recovered => "AccentBrush",
+            RecoveryStatus.Recoverable     => "SuccessBrush",
+            RecoveryStatus.Recovered       => "AccentBrush",
+            RecoveryStatus.Verified        => "SuccessBrush",
             RecoveryStatus.PartialMetadata => "WarningBrush",
-            RecoveryStatus.Overwritten => "WarningBrush",
-            RecoveryStatus.Failed => "DangerBrush",
+            RecoveryStatus.Overwritten     => "WarningBrush",
+            RecoveryStatus.Failed          => "DangerBrush",
+            RecoveryStatus.Corrupt         => "DangerBrush",
             _ => "TextSecondaryBrush"
         } : "TextSecondaryBrush";
         return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
@@ -176,4 +178,44 @@ public sealed class ReadinessToVisibilityConverter : IValueConverter
     public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
         => value is RecoveryReadiness r && !r.RecoveryReady ? Visibility.Visible : Visibility.Collapsed;
     public object ConvertBack(object value, Type t, object? p, CultureInfo c) => Binding.DoNothing;
+}
+
+/// <summary>Maps FileCategory? (null = All) to/from a ComboBox SelectedIndex.</summary>
+public sealed class CategoryIndexConverter : IValueConverter
+{
+    private static readonly FileCategory?[] Map =
+        [null, FileCategory.Image, FileCategory.Video, FileCategory.Audio, FileCategory.Document, FileCategory.Archive];
+
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var cat = value as FileCategory?;
+        int idx = Array.IndexOf(Map, cat);
+        return idx < 0 ? 0 : idx;
+    }
+
+    public object? ConvertBack(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        int idx = value is int i ? i : 0;
+        return idx >= 0 && idx < Map.Length ? (object?)Map[idx] : null;
+    }
+}
+
+/// <summary>Maps a minimum-size long (0, 100K, 1M, 10M, 100M, 1G) to/from a ComboBox SelectedIndex.</summary>
+public sealed class SizeIndexConverter : IValueConverter
+{
+    private static readonly long[] Map =
+        [0L, 100L * 1024, 1L * 1024 * 1024, 10L * 1024 * 1024, 100L * 1024 * 1024, 1024L * 1024 * 1024];
+
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        long size = value is long l ? l : 0L;
+        int idx = Array.IndexOf(Map, size);
+        return idx < 0 ? 0 : idx;
+    }
+
+    public object ConvertBack(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        int idx = value is int i ? i : 0;
+        return idx >= 0 && idx < Map.Length ? Map[idx] : 0L;
+    }
 }

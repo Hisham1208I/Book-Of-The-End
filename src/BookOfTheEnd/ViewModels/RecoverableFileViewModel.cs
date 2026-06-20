@@ -34,12 +34,14 @@ public sealed partial class RecoverableFileViewModel : ObservableObject
 
     public string StatusDisplay => Model.Status switch
     {
-        RecoveryStatus.Recoverable => "Recoverable",
+        RecoveryStatus.Recoverable     => "Recoverable",
         RecoveryStatus.PartialMetadata => "No metadata",
-        RecoveryStatus.Overwritten => "May be overwritten",
-        RecoveryStatus.Recovered => "Recovered",
-        RecoveryStatus.Failed => "Failed",
-        _ => Model.Status.ToString()
+        RecoveryStatus.Overwritten     => "May be overwritten",
+        RecoveryStatus.Recovered       => "Recovered",
+        RecoveryStatus.Failed          => "Failed",
+        RecoveryStatus.Verified        => "Verified ✓",
+        RecoveryStatus.Corrupt         => "Corrupt ⚠",
+        _                              => Model.Status.ToString()
     };
 
     /// <summary>Pushes model state changes (e.g. after recovery) to the UI.</summary>

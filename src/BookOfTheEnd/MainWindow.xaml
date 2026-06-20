@@ -39,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.6.1" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.7.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -361,10 +361,12 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <!-- Row 0: title + search + recover buttons -->
+                        <Grid Grid.Row="0" Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -383,7 +385,35 @@
                             </StackPanel>
                         </Grid>
 
-                        <Border Grid.Row="1" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
+                        <!-- Row 1: filter bar -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Category:" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <ComboBox VerticalAlignment="Center" Width="110"
+                                      SelectedIndex="{Binding FilterCategory, Converter={StaticResource CategoryIndexConverter}}">
+                                <ComboBoxItem Content="All categories" Tag="" />
+                                <ComboBoxItem Content="Images" Tag="Image" />
+                                <ComboBoxItem Content="Videos" Tag="Video" />
+                                <ComboBoxItem Content="Audio" Tag="Audio" />
+                                <ComboBoxItem Content="Documents" Tag="Document" />
+                                <ComboBoxItem Content="Archives" Tag="Archive" />
+                            </ComboBox>
+                            <TextBlock Text="Min size:" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="14,0,6,0" />
+                            <ComboBox VerticalAlignment="Center" Width="100"
+                                      SelectedIndex="{Binding FilterMinSize, Converter={StaticResource SizeIndexConverter}}">
+                                <ComboBoxItem Content="Any size" />
+                                <ComboBoxItem Content="&gt; 100 KB" />
+                                <ComboBoxItem Content="&gt; 1 MB" />
+                                <ComboBoxItem Content="&gt; 10 MB" />
+                                <ComboBoxItem Content="&gt; 100 MB" />
+                                <ComboBoxItem Content="&gt; 1 GB" />
+                            </ComboBox>
+                            <Button Content="Clear" Command="{Binding ClearFiltersCommand}"
+                                    Margin="10,0,0,0" Padding="10,4" VerticalAlignment="Center" />
+                            <Button Content="Export CSV" Command="{Binding ExportCsvCommand}"
+                                    Margin="8,0,0,0" Padding="10,4" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Border Grid.Row="2" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
                                 Padding="12,10" Margin="0,0,0,10"
                                 Visibility="{Binding IsScanning, Converter={StaticResource BoolVis}}">
                             <StackPanel>
@@ -415,7 +445,7 @@
                         </Border>
 
                         <!-- Recovery progress panel -->
-                        <Border Grid.Row="2" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
+                        <Border Grid.Row="3" Background="{DynamicResource SurfaceAltBrush}" CornerRadius="8"
                                 Padding="12,10" Margin="0,0,0,10"
                                 Visibility="{Binding IsRecovering, Converter={StaticResource BoolVis}}">
                             <StackPanel>
@@ -430,7 +460,7 @@
                             </StackPanel>
                         </Border>
 
-                        <DataGrid x:Name="ResultsGrid" Grid.Row="3" ItemsSource="{Binding ResultsView}"
+                        <DataGrid x:Name="ResultsGrid" Grid.Row="4" ItemsSource="{Binding ResultsView}"
                                   SelectionChanged="OnResultsSelectionChanged">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="" Width="36" CanUserSort="False">

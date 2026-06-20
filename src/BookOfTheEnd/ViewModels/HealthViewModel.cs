@@ -14,7 +14,7 @@ namespace BookOfTheEnd.ViewModels;
 
 /// <summary>
 /// Backs the Health dashboard tab: live SMART/health readings for the selected drive
-/// (auto-refreshed every 60s) plus surface scan and drive imaging.
+/// (auto-refreshed every 60s) plus surface scan, drive imaging, and a speed benchmark.
 /// </summary>
 public sealed partial class HealthViewModel : ObservableObject
 {
@@ -24,6 +24,7 @@ public sealed partial class HealthViewModel : ObservableObject
     private readonly SurfaceScanService _surface;
     private readonly SmartHistoryService _smartHistory;
     private readonly DriveImageService _driveImage;
+    private readonly DriveSpeedService _driveSpeed;
     private readonly LoggingService _log;
     private readonly DispatcherTimer _timer;
 
@@ -31,18 +32,21 @@ public sealed partial class HealthViewModel : ObservableObject
     private SurfaceScanResult? _lastSurface;
     private ScanController? _surfaceController;
     private CancellationTokenSource? _imagingCts;
+    private CancellationTokenSource? _benchmarkCts;
 
     public HealthViewModel(
         StorageHealthService health,
         SurfaceScanService surface,
         SmartHistoryService smartHistory,
         DriveImageService driveImage,
+        DriveSpeedService driveSpeed,
         LoggingService log)
     {
         _health = health;
         _surface = surface;
         _smartHistory = smartHistory;
         _driveImage = driveImage;
+        _driveSpeed = driveSpeed;
         _log = log;
 
         _timer = new DispatcherTimer { Interval = RefreshInterval };
@@ -78,6 +82,15 @@ public sealed partial class HealthViewModel : ObservableObject
     [ObservableProperty] private double _imagingProgress;
     [ObservableProperty] private string _imagingActivity = "No image created yet.";
 
+    // --- Speed benchmark ---
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RunBenchmarkCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelBenchmarkCommand))]
+    private bool _isBenchmarking;
+
+    [ObservableProperty] private double _benchmarkProgress;
+    [ObservableProperty] private string _benchmarkResult = "Not run yet.";
+
     // --- SMART history trends ---
     [ObservableProperty] private string _reallocTrend = "";
     [ObservableProperty] private string _pendingTrend = "";
@@ -109,6 +122,7 @@ public sealed partial class HealthViewModel : ObservableObject
         }
         RunSurfaceScanCommand.NotifyCanExecuteChanged();
         ImageDriveCommand.NotifyCanExecuteChanged();
+        RunBenchmarkCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
@@ -310,6 +324,54 @@ public sealed partial class HealthViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanCancelImaging))]
     private void CancelImaging() => _imagingCts?.Cancel();
+
+    // --- Speed benchmark ---
+    private bool CanRunBenchmark() => !IsBenchmarking && _currentDrive is not null;
+
+    [RelayCommand(CanExecute = nameof(CanRunBenchmark))]
+    private async Task RunBenchmark()
+    {
+        if (_currentDrive is not { } drive) return;
+
+        _benchmarkCts = new CancellationTokenSource();
+        IsBenchmarking = true;
+        BenchmarkProgress = 0;
+        BenchmarkResult = "Benchmarking…";
+
+        var progress = new Progress<double>(fraction =>
+        {
+            BenchmarkProgress = fraction * 100.0;
+        });
+
+        try
+        {
+            double mbps = await _driveSpeed.BenchmarkAsync(drive, TimeSpan.FromSeconds(30), progress, _benchmarkCts.Token);
+            BenchmarkResult = $"{mbps:0.0} MB/s sequential read";
+            BenchmarkProgress = 100;
+        }
+        catch (OperationCanceledException)
+        {
+            BenchmarkResult = "Benchmark cancelled.";
+            BenchmarkProgress = 0;
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"Benchmark failed for {drive.Letter}: {ex.Message}");
+            BenchmarkResult = $"Benchmark failed: {ex.Message}";
+            BenchmarkProgress = 0;
+        }
+        finally
+        {
+            IsBenchmarking = false;
+            _benchmarkCts?.Dispose();
+            _benchmarkCts = null;
+        }
+    }
+
+    private bool CanCancelBenchmark() => IsBenchmarking;
+
+    [RelayCommand(CanExecute = nameof(CanCancelBenchmark))]
+    private void CancelBenchmark() => _benchmarkCts?.Cancel();
 
     private void SurfaceResultReset()
     {

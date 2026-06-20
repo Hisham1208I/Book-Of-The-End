@@ -232,6 +232,33 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Speed benchmark -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE9D9;" Style="{StaticResource GlyphText}" FontSize="15"
+                                           Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Read Speed Benchmark" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Run 30-second test" Style="{StaticResource AccentButton}"
+                                        Command="{Binding RunBenchmarkCommand}"
+                                        Visibility="{Binding IsBenchmarking, Converter={StaticResource BoolVisInv}}" />
+                                <Button Content="&#x23F9; Cancel" Command="{Binding CancelBenchmarkCommand}"
+                                        Visibility="{Binding IsBenchmarking, Converter={StaticResource BoolVis}}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Text="Measures sequential read speed by streaming raw sectors for 30 seconds. Read-only — never writes to the drive." />
+                        <ProgressBar Value="{Binding BenchmarkProgress, Mode=OneWay}" Maximum="100" Height="6"
+                                     Margin="0,10,0,6"
+                                     Visibility="{Binding IsBenchmarking, Converter={StaticResource BoolVis}}" />
+                        <TextBlock Text="{Binding BenchmarkResult}" Style="{StaticResource Body}"
+                                   FontWeight="SemiBold" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Drive imaging -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>

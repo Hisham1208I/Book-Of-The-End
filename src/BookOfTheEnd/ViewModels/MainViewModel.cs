@@ -64,6 +64,7 @@ public sealed partial class MainViewModel : ObservableObject
         SessionService sessionService,
         SmartHistoryService smartHistory,
         DriveImageService driveImage,
+        DriveSpeedService driveSpeed,
         LoggingService log)
     {
         _driveService = driveService;
@@ -76,7 +77,7 @@ public sealed partial class MainViewModel : ObservableObject
         _sessionService = sessionService;
         _log = log;
 
-        Health = new HealthViewModel(storageHealth, surfaceScan, smartHistory, driveImage, log);
+        Health = new HealthViewModel(storageHealth, surfaceScan, smartHistory, driveImage, driveSpeed, log);
 
         DrivesView = CollectionViewSource.GetDefaultView(Drives);
         DrivesView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(DriveModel.GroupName)));
@@ -138,6 +139,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _includeOther = true;
 
     [ObservableProperty] private string _searchText = "";
+
+    // --- Result filters ---
+    [ObservableProperty] private FileCategory? _filterCategory = null; // null = all categories
+    [ObservableProperty] private long _filterMinSize = 0;              // 0 = no size filter
+
+    partial void OnFilterCategoryChanged(FileCategory? value) => ResultsView.Refresh();
+    partial void OnFilterMinSizeChanged(long value) => ResultsView.Refresh();
 
     // --- Session restore ---
     [ObservableProperty] private bool _hasLastSession;
@@ -690,10 +698,80 @@ public sealed partial class MainViewModel : ObservableObject
     private bool FilterResult(object obj)
     {
         if (obj is not RecoverableFileViewModel vm) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
-        string q = SearchText.Trim();
-        return vm.FileName.Contains(q, StringComparison.OrdinalIgnoreCase)
-               || vm.Extension.Contains(q, StringComparison.OrdinalIgnoreCase)
-               || vm.OriginalPath.Contains(q, StringComparison.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            string q = SearchText.Trim();
+            if (!vm.FileName.Contains(q, StringComparison.OrdinalIgnoreCase)
+                && !vm.Extension.Contains(q, StringComparison.OrdinalIgnoreCase)
+                && !vm.OriginalPath.Contains(q, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (FilterCategory is { } cat && vm.Category != cat) return false;
+        if (FilterMinSize > 0 && vm.Size < FilterMinSize) return false;
+
+        return true;
+    }
+
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        SearchText = "";
+        FilterCategory = null;
+        FilterMinSize = 0;
+    }
+
+    [RelayCommand]
+    private void ExportCsv()
+    {
+        var visible = ResultsView.Cast<RecoverableFileViewModel>().ToList();
+        if (visible.Count == 0)
+        {
+            StatusMessage = "No results to export.";
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export results as CSV",
+            Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+            FileName = $"BookOfTheEnd_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+            DefaultExt = ".csv"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            using var writer = new System.IO.StreamWriter(dialog.FileName, false, System.Text.Encoding.UTF8);
+            writer.WriteLine("Name,Extension,Size (bytes),Category,Status,Quality,Modified,Deleted,Source,Original Path");
+            foreach (var vm in visible)
+            {
+                writer.WriteLine(string.Join(",",
+                    CsvEscape(vm.FileName),
+                    CsvEscape(vm.Extension),
+                    vm.Size.ToString(),
+                    vm.Category.ToString(),
+                    vm.StatusDisplay,
+                    vm.Quality.ToString(),
+                    vm.Modified?.ToString("yyyy-MM-dd HH:mm") ?? "",
+                    vm.Deleted?.ToString("yyyy-MM-dd HH:mm") ?? "",
+                    vm.SourceDisplay,
+                    CsvEscape(vm.OriginalPath)));
+            }
+            StatusMessage = $"Exported {visible.Count} results to {dialog.FileName}";
+        }
+        catch (Exception ex)
+        {
+            _log.Error("CSV export failed", ex);
+            StatusMessage = $"Export failed: {ex.Message}";
+        }
+    }
+
+    private static string CsvEscape(string s)
+    {
+        if (s.Contains(',') || s.Contains('"') || s.Contains('\n'))
+            return "\"" + s.Replace("\"", "\"\"") + "\"";
+        return s;
     }
 }
