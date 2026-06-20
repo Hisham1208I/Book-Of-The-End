@@ -5,7 +5,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:controls="clr-namespace:BookOfTheEnd.Controls"
         xmlns:views="clr-namespace:BookOfTheEnd.Views"
-        Title="Book of the End — Data Recovery"
+        Title="Book of the End â€” Data Recovery"
         Height="800" Width="1320" MinHeight="660" MinWidth="1120"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" ResizeMode="CanResize"
@@ -37,7 +37,7 @@
                         <controls:AppLogo LogoSize="18" VerticalAlignment="Center" />
                         <TextBlock Text="Book of the End" FontWeight="SemiBold" Margin="10,0,0,0"
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
+                        <TextBlock Text="â€” Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="v2.7.1" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -188,7 +188,7 @@
                                         <Run Text="{Binding RootPath, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding VolumeLabel, Mode=OneWay, TargetNullValue=''}" />
                                     </TextBlock>
                                     <TextBlock Style="{StaticResource Caption}">
-                                        <Run Text="{Binding ConnectionDisplay, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding SpecsLine, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding CapacityDisplay, Mode=OneWay}" />
+                                        <Run Text="{Binding ConnectionDisplay, Mode=OneWay}" /><Run Text="  ï¿½  " /><Run Text="{Binding SpecsLine, Mode=OneWay}" /><Run Text="  ï¿½  " /><Run Text="{Binding CapacityDisplay, Mode=OneWay}" />
                                     </TextBlock>
                                 </StackPanel>
                             </StackPanel>
@@ -421,8 +421,8 @@
                                     <TextBlock Style="{StaticResource Caption}" Text="{Binding CurrentActivity}" />
                                     <TextBlock Style="{StaticResource Caption}" HorizontalAlignment="Right">
                                         <Run Text="{Binding ProgressPercent, StringFormat={}{0:0}%, Mode=OneWay}" />
-                                        <Run Text="  ·  ETA " /><Run Text="{Binding EtaText, Mode=OneWay}" />
-                                        <Run Text="  ·  " /><Run Text="{Binding ElapsedText, Mode=OneWay}" />
+                                        <Run Text="  ï¿½  ETA " /><Run Text="{Binding EtaText, Mode=OneWay}" />
+                                        <Run Text="  ï¿½  " /><Run Text="{Binding ElapsedText, Mode=OneWay}" />
                                     </TextBlock>
                                 </Grid>
                                 <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" />
