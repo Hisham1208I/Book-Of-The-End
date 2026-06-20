@@ -4,7 +4,7 @@
 
   <Package Name="Book of the End"
            Manufacturer="Book of the End"
-           Version="2.8.1.0"
+           Version="2.8.2.0"
            UpgradeCode="7F3A2C1E-9B44-4E2A-8D1C-2A6F5B0E4C77"
            Scope="perMachine"
            Compressed="yes">
@@ -36,6 +36,30 @@
                   Execute="immediate"
                   Return="asyncNoWait"
                   Impersonate="yes" />
+
+    <!--
+      BookOfTheEnd opens raw volume handles (\\.\C: via CreateFileW) for disk recovery.
+      Windows Defender's heuristic engine treats this as ransomware-like behavior and
+      quarantines BookOfTheEnd.exe as soon as it lands on disk, breaking the install.
+
+      Fix: add the install folder to Defender's exclusion list BEFORE InstallFiles copies
+      any files. The exclusion is removed cleanly on uninstall.
+      Return="ignore" means a non-zero PowerShell exit code does not roll back the install
+      (e.g. if Defender is disabled, Add-MpPreference returns an error).
+    -->
+    <CustomAction Id="AddDefenderExclusion"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="[System64Folder]WindowsPowerShell\v1.0\powershell.exe -NonInteractive -WindowStyle Hidden -Command &quot;Add-MpPreference -ExclusionPath '[INSTALLFOLDER]' -ErrorAction SilentlyContinue&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <CustomAction Id="RemoveDefenderExclusion"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="[System64Folder]WindowsPowerShell\v1.0\powershell.exe -NonInteractive -WindowStyle Hidden -Command &quot;Remove-MpPreference -ExclusionPath '[INSTALLFOLDER]' -ErrorAction SilentlyContinue&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
 
     <!-- Installer UI: license + choose install dir -->
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
@@ -69,10 +93,14 @@
                   Return="ignore" />
 
     <InstallExecuteSequence>
+      <!-- Exclusion must be set before files land on disk so Defender never sees the raw exe. -->
+      <Custom Action="AddDefenderExclusion" Before="InstallFiles" Condition="NOT REMOVE" />
       <Custom Action="InstallWebView2" Before="InstallFiles" Condition="NOT WEBVIEW2WOW64 AND NOT WEBVIEW2NATIVE" />
       <!-- Auto-relaunch when upgrading from a previous version (bundle runs MSI silently, so no ExitDialog) -->
       <Custom Action="LaunchApp" After="InstallFinalize"
               Condition="WIX_UPGRADE_DETECTED AND NOT REMOVE" />
+      <!-- Remove the exclusion when the user uninstalls so we leave no trace in Defender settings. -->
+      <Custom Action="RemoveDefenderExclusion" Before="RemoveFiles" Condition="REMOVE" />
     </InstallExecuteSequence>
 
     <!-- Install layout -->
