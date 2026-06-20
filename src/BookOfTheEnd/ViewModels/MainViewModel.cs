@@ -196,9 +196,29 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RestoreSession()
+    private async Task RestoreSession()
     {
-        var session = _sessionService.Load();
+        StatusMessage = "Loading session…";
+        SessionData? session;
+        IReadOnlyList<RecoverableFile> files;
+        try
+        {
+            // Deserialize on a pool thread to keep the UI responsive
+            (session, files) = await Task.Run(() =>
+            {
+                var s = _sessionService.Load();
+                return s is null
+                    ? (null, (IReadOnlyList<RecoverableFile>)Array.Empty<RecoverableFile>())
+                    : (s, _sessionService.ToFiles(s));
+            });
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"Session restore failed: {ex.Message}");
+            StatusMessage = "Failed to load last session.";
+            return;
+        }
+
         if (session is null) return;
 
         _results.Clear();
@@ -206,7 +226,6 @@ public sealed partial class MainViewModel : ObservableObject
         _totalFound = 0;
         OnPropertyChanged(nameof(ResultCount));
 
-        var files = _sessionService.ToFiles(session);
         foreach (var f in files)
             _results.Add(new RecoverableFileViewModel(f));
 
@@ -322,10 +341,13 @@ public sealed partial class MainViewModel : ObservableObject
 
             if (_results.Count > 0 && SelectedDrive is { } savedDrive)
             {
-                _sessionService.Save(savedDrive.Letter,
-                    IsDeepScan ? ScanType.Deep : ScanType.Quick,
-                    _results.Select(vm => vm.Model));
-                RefreshSessionBanner();
+                // Capture before going async so the UI can't change them underneath us
+                string letter = savedDrive.Letter;
+                ScanType scanType = IsDeepScan ? ScanType.Deep : ScanType.Quick;
+                var models = _results.Select(vm => vm.Model).ToList();
+                _ = Task.Run(() => _sessionService.Save(letter, scanType, models))
+                        .ContinueWith(_ => RefreshSessionBanner(),
+                            System.Threading.Tasks.TaskScheduler.FromCurrentSynchronizationContext());
             }
         }
     }

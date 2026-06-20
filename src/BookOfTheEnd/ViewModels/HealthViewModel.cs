@@ -151,9 +151,8 @@ public sealed partial class HealthViewModel : ObservableObject
             ? $"{health.Model}_{health.CapacityBytes}"
             : health.Serial;
 
-        var prev = _smartHistory.GetHistory(key).LastOrDefault();
-
-        _smartHistory.Append(key, new SmartHistoryEntry
+        // Single file read+write: loads history, captures prev, appends, saves
+        var prev = _smartHistory.AppendAndGetPrevious(key, new SmartHistoryEntry
         {
             Timestamp = DateTime.Now,
             DriveLetter = drive.Letter,

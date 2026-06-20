@@ -24,35 +24,31 @@ public sealed class SmartHistoryService
             "Book of the End", "smart-history.json");
     }
 
-    public void Append(string diskKey, SmartHistoryEntry entry)
+    /// <summary>
+    /// Loads history for <paramref name="diskKey"/>, appends <paramref name="entry"/>,
+    /// saves, and returns the entry that was the last one before the append (for trend computation).
+    /// Single file read + single file write per call.
+    /// </summary>
+    public SmartHistoryEntry? AppendAndGetPrevious(string diskKey, SmartHistoryEntry entry)
     {
         var history = LoadAll();
         if (!history.TryGetValue(diskKey, out var list))
             history[diskKey] = list = new List<SmartHistoryEntry>();
+
+        SmartHistoryEntry? prev = list.Count > 0 ? list[^1] : null;
 
         list.Add(entry);
         if (list.Count > MaxEntriesPerDisk)
             list.RemoveRange(0, list.Count - MaxEntriesPerDisk);
 
         Save(history);
+        return prev;
     }
 
     public IReadOnlyList<SmartHistoryEntry> GetHistory(string diskKey)
     {
         var history = LoadAll();
         return history.TryGetValue(diskKey, out var list) ? list : Array.Empty<SmartHistoryEntry>();
-    }
-
-    /// <summary>
-    /// Returns a human-readable delta string for a SMART counter, e.g. "+3 since last reading".
-    /// Returns null when there is no prior reading or both values are unknown.
-    /// </summary>
-    public string? ComputeDelta(string diskKey, long? current)
-    {
-        if (current is null) return null;
-        var history = GetHistory(diskKey);
-        if (history.Count == 0) return null;
-        return null; // populated after first save — delegate to caller with loaded list
     }
 
     private Dictionary<string, List<SmartHistoryEntry>> LoadAll()

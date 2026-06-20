@@ -224,8 +224,9 @@ public sealed class DeepScanEngine : IScanEngine
 
     /// <summary>
     /// Walks top-level ISO Base Media File Format boxes starting at <paramref name="fileStart"/>,
-    /// summing their sizes to find where the file ends. Stops after the moov/mdat box
-    /// or when maxBound is reached. Returns 0 if the structure is malformed.
+    /// summing their sizes to find where the file ends.
+    /// Each top-level box costs one 16-byte disk read regardless of its content size,
+    /// so a typical MP4 (ftyp + free + mdat + moov) is only 4 reads total.
     /// </summary>
     private static long WalkIsoBoxes(RawVolumeReader reader, long fileStart, long maxBound)
     {
@@ -245,7 +246,7 @@ public sealed class DeepScanEngine : IScanEngine
 
             if (boxSize == 0)
             {
-                // Extends to the end of the file — treat as end
+                // Extends to end of file — use current position as approximate end
                 break;
             }
 
@@ -259,13 +260,10 @@ public sealed class DeepScanEngine : IScanEngine
                         | ((long)h[14] <<  8) |  (long)h[15];
             }
 
+            // A malformed or out-of-bounds box means we've found the file boundary
             if (boxSize < 8 || pos + boxSize > ceiling) break;
 
             pos += boxSize;
-
-            // moov is typically the last meaningful box — stop here
-            string boxType = Encoding.ASCII.GetString(h, 4, 4);
-            if (string.Equals(boxType, "moov", StringComparison.Ordinal)) break;
         }
 
         long total = pos - fileStart;
