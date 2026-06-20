@@ -39,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.8.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.8.1" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -375,9 +375,9 @@
                             <TextBlock Grid.Column="0" Style="{StaticResource H2}" VerticalAlignment="Center">
                                 <Run Text="Results" /><Run Text=" (" /><Run Text="{Binding ResultCount, Mode=OneWay}" /><Run Text=")" />
                             </TextBlock>
-                            <TextBox Grid.Column="1" Margin="14,0" VerticalAlignment="Center"
+                            <TextBox x:Name="SearchBox" Grid.Column="1" Margin="14,0" VerticalAlignment="Center"
                                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Search by name, type, or path" />
+                                     ToolTip="Search by name, type, or path (Ctrl+F)" />
                             <StackPanel Grid.Column="2" Orientation="Horizontal">
                                 <Button Content="Recover Selected" Command="{Binding RecoverSelectedCommand}" />
                                 <Button Content="Recover All" Style="{StaticResource AccentButton}"
@@ -469,7 +469,16 @@
                         </Border>
 
                         <DataGrid x:Name="ResultsGrid" Grid.Row="4" ItemsSource="{Binding ResultsView}"
-                                  SelectionChanged="OnResultsSelectionChanged">
+                                  SelectionChanged="OnResultsSelectionChanged"
+                                  PreviewMouseRightButtonDown="OnResultsPreviewRightClick">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem x:Name="ContextMenuRecover" Header="Recover this file"
+                                              Click="OnContextMenuRecover" />
+                                    <MenuItem x:Name="ContextMenuPreview" Header="Preview"
+                                              Click="OnContextMenuPreview" />
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="" Width="36" CanUserSort="False">
                                     <DataGridTemplateColumn.CellTemplate>

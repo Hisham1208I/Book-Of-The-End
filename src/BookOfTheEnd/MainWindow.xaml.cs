@@ -74,14 +74,65 @@ public partial class MainWindow : Window
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Space || _vm is null) return;
-        // Don't hijack Space when typing or when a clickable control has focus.
-        if (Keyboard.FocusedElement is TextBoxBase or ButtonBase) return;
-        if (!_vm.IsScanTab) return;
-        if (_vm.StartScanCommand.CanExecute(null))
+        if (_vm is null) return;
+        bool ctrl = (e.KeyboardDevice.Modifiers & ModifierKeys.Control) != 0;
+        bool typing = Keyboard.FocusedElement is TextBoxBase;
+
+        switch (e.Key)
         {
-            _vm.StartScanCommand.Execute(null);
-            e.Handled = true;
+            // Ctrl+S — start scan (works from any tab, not while typing)
+            case Key.S when ctrl && !typing:
+                if (_vm.StartScanCommand.CanExecute(null))
+                {
+                    _vm.StartScanCommand.Execute(null);
+                    e.Handled = true;
+                }
+                break;
+
+            // Ctrl+R — recover selected files
+            case Key.R when ctrl && !typing:
+                if (_vm.RecoverSelectedCommand.CanExecute(null))
+                {
+                    _vm.RecoverSelectedCommand.Execute(null);
+                    e.Handled = true;
+                }
+                break;
+
+            // Ctrl+F — focus the search box on the Results tab
+            case Key.F when ctrl:
+                _vm.ShowResultsTabCommand.Execute(null);
+                SearchBox?.Focus();
+                SearchBox?.SelectAll();
+                e.Handled = true;
+                break;
+
+            // Escape — cancel active scan or close search
+            case Key.Escape when !typing:
+                if (_vm.IsScanning && _vm.CancelScanCommand.CanExecute(null))
+                {
+                    _vm.CancelScanCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else if (!string.IsNullOrEmpty(_vm.SearchText))
+                {
+                    _vm.SearchText = "";
+                    e.Handled = true;
+                }
+                break;
+
+            // Space — start scan on Scan tab, or preview selected on Results tab
+            case Key.Space when !typing && !(Keyboard.FocusedElement is ButtonBase):
+                if (_vm.IsScanTab && _vm.StartScanCommand.CanExecute(null))
+                {
+                    _vm.StartScanCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else if (_vm.IsResultsTab && ResultsGrid.SelectedItem is RecoverableFileViewModel file)
+                {
+                    _ = _vm.PreviewAsync(file);
+                    e.Handled = true;
+                }
+                break;
         }
     }
 
@@ -92,6 +143,36 @@ public partial class MainWindow : Window
         var selected = ResultsGrid.SelectedItems.Cast<RecoverableFileViewModel>().ToList();
         _vm.UpdateSelection(selected);
         _ = _vm.PreviewAsync(selected.LastOrDefault());
+    }
+
+    // ===== Right-click context menu =====
+    private void OnResultsPreviewRightClick(object sender, MouseButtonEventArgs e)
+    {
+        // Select the row under the cursor before the context menu opens so SelectedItem is set.
+        var row = FindVisualAncestor<DataGridRow>((DependencyObject)e.OriginalSource);
+        if (row is not null) row.IsSelected = true;
+    }
+
+    private void OnContextMenuRecover(object sender, RoutedEventArgs e)
+    {
+        if (_vm is null || ResultsGrid.SelectedItem is not RecoverableFileViewModel file) return;
+        _vm.RecoverSingleFileCommand.Execute(file);
+    }
+
+    private void OnContextMenuPreview(object sender, RoutedEventArgs e)
+    {
+        if (_vm is null || ResultsGrid.SelectedItem is not RecoverableFileViewModel file) return;
+        _ = _vm.PreviewAsync(file);
+    }
+
+    private static T? FindVisualAncestor<T>(DependencyObject d) where T : DependencyObject
+    {
+        while (d is not null)
+        {
+            if (d is T t) return t;
+            d = System.Windows.Media.VisualTreeHelper.GetParent(d);
+        }
+        return null;
     }
 
     private void RenderPreview(PreviewResult? preview)

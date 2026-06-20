@@ -485,6 +485,10 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRecoverAll))]
     private Task RecoverAll() => RecoverFiles(_results.ToList());
 
+    [RelayCommand]
+    private Task RecoverSingleFile(RecoverableFileViewModel? file) =>
+        file is null ? Task.CompletedTask : RecoverFiles(new List<RecoverableFileViewModel> { file });
+
     private async Task RecoverFiles(List<RecoverableFileViewModel> selected)
     {
         if (selected.Count == 0) return;
