@@ -1,4 +1,4 @@
-# Builds a self-contained publish output and packages it into signed MSI + setup.exe.
+﻿# Builds a self-contained publish output and packages it into signed MSI + setup.exe.
 # Requires: .NET 8 SDK, WiX Toolset 5+ (winget install WiXToolset.WiX)
 #
 # Optional code signing (removes SmartScreen "Unknown publisher" warnings):
@@ -9,7 +9,7 @@
 param(
     [ValidateSet("Release", "Debug")]
     [string]$Configuration = "Release",
-    [string]$Version = "2.7.1",
+    [string]$Version = "2.7.2",
     [switch]$SkipSign,
     [switch]$SkipWebView2Download
 )

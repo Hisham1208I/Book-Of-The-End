@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Recommended distribution package: a single setup.exe that installs WebView2 (if missing)
   and then the Book of the End MSI. Built by build/build-installer.ps1.
@@ -9,7 +9,7 @@
 
   <Bundle Name="Book of the End"
           Manufacturer="Book of the End"
-          Version="2.7.1.0"
+          Version="2.7.2.0"
           UpgradeCode="8E4B3D2C-1A09-4F5E-9C6D-3B7A8E0F1D22"
           IconSourceFile="..\src\BookOfTheEnd\app.ico">
 
@@ -18,7 +18,8 @@
           LogoFile="assets\logo-64.png"
           LicenseUrl=""
           Theme="hyperlinkLicense"
-          ShowVersion="yes" />
+          ShowVersion="yes"
+          LaunchTarget="[ProgramFiles64Folder]Book of the End\BookOfTheEnd.exe" />
     </BootstrapperApplication>
 
     <!-- Detect Evergreen WebView2 Runtime (required for PDF preview). -->

@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <Package Name="Book of the End"
            Manufacturer="Book of the End"
-           Version="2.7.1.0"
+           Version="2.7.2.0"
            UpgradeCode="7F3A2C1E-9B44-4E2A-8D1C-2A6F5B0E4C77"
            Scope="perMachine"
            Compressed="yes">
@@ -28,10 +28,20 @@
     <Icon Id="ProductIcon.exe" SourceFile="$(var.PublishDir)BookOfTheEnd.exe" />
     <Property Id="ARPPRODUCTICON" Value="ProductIcon.exe" />
 
+    <!-- Launch app after install/update.
+         Directory-type CA: ExeCommand is a formatted string so [INSTALLFOLDER] resolves at runtime. -->
+    <CustomAction Id="LaunchApp"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]BookOfTheEnd.exe&quot;"
+                  Execute="immediate"
+                  Return="asyncNoWait"
+                  Impersonate="yes" />
+
     <!-- Installer UI: license + choose install dir -->
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <ui:WixUI Id="WixUI_InstallDir" />
+
 
     <!-- WebView2 Runtime detection (PDF preview). Installed silently if missing. -->
     <Property Id="WEBVIEW2WOW64" Secure="yes">
@@ -60,6 +70,9 @@
 
     <InstallExecuteSequence>
       <Custom Action="InstallWebView2" Before="InstallFiles" Condition="NOT WEBVIEW2WOW64 AND NOT WEBVIEW2NATIVE" />
+      <!-- Auto-relaunch when upgrading from a previous version (bundle runs MSI silently, so no ExitDialog) -->
+      <Custom Action="LaunchApp" After="InstallFinalize"
+              Condition="WIX_UPGRADE_DETECTED AND NOT REMOVE" />
     </InstallExecuteSequence>
 
     <!-- Install layout -->
