@@ -132,6 +132,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
@@ -145,8 +146,14 @@
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentHealth.PowerCyclesDisplay}" Style="{StaticResource Body}" />
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Reallocated sectors" Style="{StaticResource Caption}" />
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentHealth.ReallocatedDisplay}" Style="{StaticResource Body}" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding ReallocTrend}" Style="{StaticResource Caption}"
+                                           Foreground="{DynamicResource DangerBrush}" Margin="6,0,0,0"
+                                           Visibility="{Binding HasTrendData, Converter={StaticResource BoolVis}}" />
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Pending sectors" Style="{StaticResource Caption}" />
                                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CurrentHealth.PendingDisplay}" Style="{StaticResource Body}" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding PendingTrend}" Style="{StaticResource Caption}"
+                                           Foreground="{DynamicResource DangerBrush}" Margin="6,0,0,0"
+                                           Visibility="{Binding HasTrendData, Converter={StaticResource BoolVis}}" />
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -171,7 +178,7 @@
                 </Border>
 
                 <!-- Surface scan -->
-                <Border Style="{StaticResource Card}">
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <StackPanel>
                         <Grid>
                             <StackPanel Orientation="Horizontal">
@@ -222,6 +229,34 @@
                             <TextBlock Text="Bad" Style="{StaticResource Caption}" Margin="5,0,14,0" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding SurfaceSummary}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Drive imaging -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xEDA2;" Style="{StaticResource GlyphText}" FontSize="15"
+                                           Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Drive Image (raw clone)" Style="{StaticResource H2}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Create drive image (.img)" Style="{StaticResource AccentButton}"
+                                        Command="{Binding ImageDriveCommand}"
+                                        Visibility="{Binding IsImaging, Converter={StaticResource BoolVisInv}}" />
+                                <Button Content="&#x23F9; Cancel" Command="{Binding CancelImagingCommand}"
+                                        Visibility="{Binding IsImaging, Converter={StaticResource BoolVis}}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Text="Clones every sector of the selected volume to a .img file. Recover from the image instead of a failing drive to avoid further data loss." />
+
+                        <ProgressBar Value="{Binding ImagingProgress, Mode=OneWay}" Maximum="100" Height="6"
+                                     Margin="0,10,0,6"
+                                     Visibility="{Binding IsImaging, Converter={StaticResource BoolVis}}" />
+                        <TextBlock Text="{Binding ImagingActivity}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
                     </StackPanel>
                 </Border>
 

@@ -37,9 +37,12 @@ public partial class App : Application
         var readiness = new RecoveryReadinessService();
         var storageHealth = new StorageHealthService(smart, analysis, readiness, _log);
         var surfaceScan = new SurfaceScanService(_log);
+        var session = new SessionService(_log);
+        var smartHistory = new SmartHistoryService(_log);
+        var driveImage = new DriveImageService(_log);
 
         var viewModel = new MainViewModel(drives, _preview, recovery, theme, presets, updates,
-            storageHealth, surfaceScan, _log);
+            storageHealth, surfaceScan, session, smartHistory, driveImage, _log);
         var window = new MainWindow { DataContext = viewModel };
         window.Show();
 

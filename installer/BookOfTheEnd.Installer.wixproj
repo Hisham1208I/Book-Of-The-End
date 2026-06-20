@@ -1,7 +1,7 @@
 <Project Sdk="WixToolset.Sdk/5.0.2">
   <PropertyGroup>
     <OutputPath>..\dist\</OutputPath>
-    <OutputName>BookOfTheEnd-2.5.0-x64</OutputName>
+    <OutputName>BookOfTheEnd-2.6.0-x64</OutputName>
     <DefineConstants>PublishDir=$(MSBuildThisFileDirectory)..\publish\</DefineConstants>
     <SuppressIces>ICE80</SuppressIces>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>

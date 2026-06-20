@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Threading;
 using BookOfTheEnd.Models;
 using BookOfTheEnd.Models.Health;
@@ -7,12 +8,13 @@ using BookOfTheEnd.Services.Health;
 using BookOfTheEnd.Services.Scanning;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 
 namespace BookOfTheEnd.ViewModels;
 
 /// <summary>
 /// Backs the Health dashboard tab: live SMART/health readings for the selected drive
-/// (auto-refreshed every 60s) plus an on-demand read-only surface scan.
+/// (auto-refreshed every 60s) plus surface scan and drive imaging.
 /// </summary>
 public sealed partial class HealthViewModel : ObservableObject
 {
@@ -20,17 +22,27 @@ public sealed partial class HealthViewModel : ObservableObject
 
     private readonly StorageHealthService _health;
     private readonly SurfaceScanService _surface;
+    private readonly SmartHistoryService _smartHistory;
+    private readonly DriveImageService _driveImage;
     private readonly LoggingService _log;
     private readonly DispatcherTimer _timer;
 
     private DriveModel? _currentDrive;
     private SurfaceScanResult? _lastSurface;
     private ScanController? _surfaceController;
+    private CancellationTokenSource? _imagingCts;
 
-    public HealthViewModel(StorageHealthService health, SurfaceScanService surface, LoggingService log)
+    public HealthViewModel(
+        StorageHealthService health,
+        SurfaceScanService surface,
+        SmartHistoryService smartHistory,
+        DriveImageService driveImage,
+        LoggingService log)
     {
         _health = health;
         _surface = surface;
+        _smartHistory = smartHistory;
+        _driveImage = driveImage;
         _log = log;
 
         _timer = new DispatcherTimer { Interval = RefreshInterval };
@@ -57,6 +69,21 @@ public sealed partial class HealthViewModel : ObservableObject
     [ObservableProperty] private string _surfaceSummary = "";
     [ObservableProperty] private bool _hasSurfaceResult;
 
+    // --- Drive imaging ---
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ImageDriveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelImagingCommand))]
+    private bool _isImaging;
+
+    [ObservableProperty] private double _imagingProgress;
+    [ObservableProperty] private string _imagingActivity = "No image created yet.";
+
+    // --- SMART history trends ---
+    [ObservableProperty] private string _reallocTrend = "";
+    [ObservableProperty] private string _pendingTrend = "";
+    [ObservableProperty] private string _tempTrend = "";
+    [ObservableProperty] private bool _hasTrendData;
+
     public bool HasHealth => CurrentHealth is not null;
     public bool HasSmartData => CurrentHealth?.DataAvailable == true;
 
@@ -68,6 +95,7 @@ public sealed partial class HealthViewModel : ObservableObject
         _lastSurface = null;
         SurfaceBlocks.Clear();
         SurfaceResultReset();
+        ClearTrends();
         _timer.Stop();
         if (drive is not null)
         {
@@ -80,6 +108,7 @@ public sealed partial class HealthViewModel : ObservableObject
             StatusNote = "Select a drive to view its health.";
         }
         RunSurfaceScanCommand.NotifyCanExecuteChanged();
+        ImageDriveCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
@@ -101,6 +130,9 @@ public sealed partial class HealthViewModel : ObservableObject
             StatusNote = health.DataAvailable
                 ? $"Updated {DateTime.Now:HH:mm:ss}."
                 : health.Smart.Note ?? "No SMART data available for this device.";
+
+            if (health.DataAvailable)
+                SaveAndComputeTrends(health, drive);
         }
         catch (Exception ex)
         {
@@ -113,6 +145,55 @@ public sealed partial class HealthViewModel : ObservableObject
         }
     }
 
+    private void SaveAndComputeTrends(DeviceHealth health, DriveModel drive)
+    {
+        string key = string.IsNullOrEmpty(health.Serial)
+            ? $"{health.Model}_{health.CapacityBytes}"
+            : health.Serial;
+
+        var prev = _smartHistory.GetHistory(key).LastOrDefault();
+
+        _smartHistory.Append(key, new SmartHistoryEntry
+        {
+            Timestamp = DateTime.Now,
+            DriveLetter = drive.Letter,
+            TemperatureC = health.Smart.TemperatureC,
+            ReallocatedSectors = health.Smart.ReallocatedSectors,
+            PendingSectors = health.Smart.PendingSectors,
+            WearPercentUsed = health.Smart.WearPercentUsed,
+            PowerOnHours = health.Smart.PowerOnHours,
+            HealthScore = health.HealthScore
+        });
+
+        if (prev is null) { ClearTrends(); return; }
+
+        ReallocTrend = DeltaLabel(health.Smart.ReallocatedSectors, prev.ReallocatedSectors, warnOnIncrease: true);
+        PendingTrend = DeltaLabel(health.Smart.PendingSectors, prev.PendingSectors, warnOnIncrease: true);
+        TempTrend = DeltaLabel(health.Smart.TemperatureC, prev.TemperatureC, warnOnIncrease: false);
+        HasTrendData = true;
+    }
+
+    private void ClearTrends()
+    {
+        ReallocTrend = "";
+        PendingTrend = "";
+        TempTrend = "";
+        HasTrendData = false;
+    }
+
+    private static string DeltaLabel(long? current, long? previous, bool warnOnIncrease)
+    {
+        if (current is null || previous is null) return "";
+        long delta = current.Value - previous.Value;
+        if (delta == 0) return "(stable)";
+        string sign = delta > 0 ? "+" : "";
+        return $"({sign}{delta} since last reading)";
+    }
+
+    private static string DeltaLabel(int? current, int? previous, bool warnOnIncrease) =>
+        DeltaLabel((long?)current, (long?)previous, warnOnIncrease);
+
+    // --- Surface scan ---
     private bool CanRunSurfaceScan() => !IsSurfaceScanning && _currentDrive is not null;
 
     [RelayCommand(CanExecute = nameof(CanRunSurfaceScan))]
@@ -150,7 +231,6 @@ public sealed partial class HealthViewModel : ObservableObject
                 HasSurfaceResult = SurfaceBlocks.Count > 0;
             }
 
-            // Fold the surface evidence into the readiness verdict.
             await RefreshAsync();
         }
         catch (OperationCanceledException)
@@ -174,6 +254,63 @@ public sealed partial class HealthViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanCancelSurfaceScan))]
     private void CancelSurfaceScan() => _surfaceController?.Cancel();
+
+    // --- Drive imaging ---
+    private bool CanImageDrive() => !IsImaging && _currentDrive is not null;
+
+    [RelayCommand(CanExecute = nameof(CanImageDrive))]
+    private async Task ImageDrive()
+    {
+        if (_currentDrive is not { } drive) return;
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save drive image",
+            Filter = "Raw disk image (*.img)|*.img|All files (*.*)|*.*",
+            FileName = $"{drive.Letter}_drive_{DateTime.Now:yyyyMMdd_HHmm}.img",
+            DefaultExt = ".img"
+        };
+        if (dialog.ShowDialog(Application.Current.MainWindow) != true) return;
+
+        _imagingCts = new CancellationTokenSource();
+        IsImaging = true;
+        ImagingProgress = 0;
+        ImagingActivity = "Starting drive image…";
+
+        var progress = new Progress<(long written, long total, string activity)>(t =>
+        {
+            ImagingProgress = t.total > 0 ? t.written * 100.0 / t.total : 0;
+            ImagingActivity = t.activity;
+        });
+
+        try
+        {
+            long bytes = await _driveImage.ImageAsync(drive, dialog.FileName, progress, _imagingCts.Token);
+            ImagingActivity = $"Image complete — {HumanSize.Format(bytes)} written to {dialog.FileName}";
+            ImagingProgress = 100;
+        }
+        catch (OperationCanceledException)
+        {
+            ImagingActivity = "Drive image cancelled.";
+            try { System.IO.File.Delete(dialog.FileName); } catch { }
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"Drive image failed for {drive.Letter}: {ex.Message}");
+            ImagingActivity = $"Drive image failed: {ex.Message}";
+        }
+        finally
+        {
+            IsImaging = false;
+            _imagingCts?.Dispose();
+            _imagingCts = null;
+        }
+    }
+
+    private bool CanCancelImaging() => IsImaging;
+
+    [RelayCommand(CanExecute = nameof(CanCancelImaging))]
+    private void CancelImaging() => _imagingCts?.Cancel();
 
     private void SurfaceResultReset()
     {

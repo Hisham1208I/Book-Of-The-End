@@ -6,12 +6,17 @@ public enum SizeStrategy
 {
     /// <summary>Scan forward for a footer byte pattern.</summary>
     Footer,
-    /// <summary>RIFF container: 32-bit little-endian size at offset 4 (+8).</summary>
+    /// <summary>RIFF container: 32-bit little-endian data-size at byte 4 (+8 = total file size).</summary>
     RiffSize,
-    /// <summary>BMP: 32-bit little-endian size at offset 2.</summary>
+    /// <summary>BMP: 32-bit little-endian file size at byte 2.</summary>
     BmpSize,
-    /// <summary>No reliable terminator: carve a bounded default block.</summary>
-    Fixed
+    /// <summary>No reliable terminator: carve a bounded fixed-size block.</summary>
+    Fixed,
+    /// <summary>
+    /// ISO Base Media File Format (MP4, HEIC, MOV …): walk top-level boxes
+    /// summing their sizes to derive the actual file length.
+    /// </summary>
+    BoxSize
 }
 
 /// <summary>Describes how to detect and bound one carvable file type.</summary>
@@ -35,48 +40,93 @@ public static class FileSignatures
 {
     public static readonly IReadOnlyList<FileSignature> All = new List<FileSignature>
     {
+        // ── Images ──────────────────────────────────────────────────────────────
         new() { Extension = ".jpg", Category = FileCategory.Image,
             Header = new byte[]{0xFF,0xD8,0xFF}, Footer = new byte[]{0xFF,0xD9},
             Strategy = SizeStrategy.Footer, MaxSize = 40L*1024*1024, Quality = RecoveryQuality.Good },
+
         new() { Extension = ".png", Category = FileCategory.Image,
             Header = new byte[]{0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A},
             Footer = new byte[]{0x49,0x45,0x4E,0x44,0xAE,0x42,0x60,0x82},
             Strategy = SizeStrategy.Footer, MaxSize = 60L*1024*1024, Quality = RecoveryQuality.Excellent },
+
         new() { Extension = ".gif", Category = FileCategory.Image,
             Header = new byte[]{0x47,0x49,0x46,0x38}, Footer = new byte[]{0x3B},
             Strategy = SizeStrategy.Footer, MaxSize = 30L*1024*1024 },
+
         new() { Extension = ".bmp", Category = FileCategory.Image,
             Header = new byte[]{0x42,0x4D}, Strategy = SizeStrategy.BmpSize, MaxSize = 40L*1024*1024 },
+
         new() { Extension = ".tif", Category = FileCategory.Image,
             Header = new byte[]{0x49,0x49,0x2A,0x00}, Strategy = SizeStrategy.Fixed,
             FixedSize = 8L*1024*1024, MaxSize = 80L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // WebP: RIFF container with "WEBP" form type at byte 8; header matched at offset 8
+        new() { Extension = ".webp", Category = FileCategory.Image,
+            Header = new byte[]{0x57,0x45,0x42,0x50}, HeaderOffset = 8,
+            Strategy = SizeStrategy.RiffSize, MaxSize = 50L*1024*1024 },
+
+        // HEIC: ISO BMFF with brand "heic" at offset 8; skipped if ftyp MP4 match already claimed it
+        new() { Extension = ".heic", Category = FileCategory.Image,
+            Header = new byte[]{0x68,0x65,0x69,0x63}, HeaderOffset = 8,
+            Strategy = SizeStrategy.BoxSize, MaxSize = 200L*1024*1024 },
+
+        // Adobe Photoshop document
+        new() { Extension = ".psd", Category = FileCategory.Image,
+            Header = new byte[]{0x38,0x42,0x50,0x53}, Strategy = SizeStrategy.Fixed,
+            FixedSize = 8L*1024*1024, MaxSize = 500L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // Canon RAW 2: TIFF-LE header + "CR" magic at byte 8
+        new() { Extension = ".cr2", Category = FileCategory.Image,
+            Header = new byte[]{0x43,0x52}, HeaderOffset = 8, Strategy = SizeStrategy.Fixed,
+            FixedSize = 25L*1024*1024, MaxSize = 80L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── Documents ───────────────────────────────────────────────────────────
         new() { Extension = ".pdf", Category = FileCategory.Document,
             Header = new byte[]{0x25,0x50,0x44,0x46}, Footer = new byte[]{0x25,0x25,0x45,0x4F,0x46},
             Strategy = SizeStrategy.Footer, MaxSize = 100L*1024*1024, Quality = RecoveryQuality.Good },
+
+        // OLE2 compound doc (.doc, .xls, .ppt — older Office formats)
+        new() { Extension = ".doc", Category = FileCategory.Document,
+            Header = new byte[]{0xD0,0xCF,0x11,0xE0,0xA1,0xB1,0x1A,0xE1}, Strategy = SizeStrategy.Fixed,
+            FixedSize = 512L*1024, MaxSize = 50L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── Archives ────────────────────────────────────────────────────────────
         new() { Extension = ".zip", Category = FileCategory.Archive,
             Header = new byte[]{0x50,0x4B,0x03,0x04}, Footer = new byte[]{0x50,0x4B,0x05,0x06},
             Strategy = SizeStrategy.Footer, MaxSize = 200L*1024*1024, Quality = RecoveryQuality.Fair },
+
         new() { Extension = ".rar", Category = FileCategory.Archive,
             Header = new byte[]{0x52,0x61,0x72,0x21,0x1A,0x07}, Strategy = SizeStrategy.Fixed,
             FixedSize = 16L*1024*1024, MaxSize = 200L*1024*1024, Quality = RecoveryQuality.Fair },
+
         new() { Extension = ".7z", Category = FileCategory.Archive,
             Header = new byte[]{0x37,0x7A,0xBC,0xAF,0x27,0x1C}, Strategy = SizeStrategy.Fixed,
             FixedSize = 16L*1024*1024, MaxSize = 200L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── Video ───────────────────────────────────────────────────────────────
+        // MP4 / MOV / M4V: ISO BMFF — box-walk gives the true file size
         new() { Extension = ".mp4", Category = FileCategory.Video,
-            Header = new byte[]{0x66,0x74,0x79,0x70}, HeaderOffset = 4, Strategy = SizeStrategy.Fixed,
-            FixedSize = 32L*1024*1024, MaxSize = 500L*1024*1024, Quality = RecoveryQuality.Fair },
+            Header = new byte[]{0x66,0x74,0x79,0x70}, HeaderOffset = 4,
+            Strategy = SizeStrategy.BoxSize, MaxSize = 8L*1024*1024*1024, Quality = RecoveryQuality.Good },
+
         new() { Extension = ".avi", Category = FileCategory.Video,
             Header = new byte[]{0x52,0x49,0x46,0x46}, Strategy = SizeStrategy.RiffSize,
             MaxSize = 500L*1024*1024, Quality = RecoveryQuality.Good },
+
         new() { Extension = ".mkv", Category = FileCategory.Video,
             Header = new byte[]{0x1A,0x45,0xDF,0xA3}, Strategy = SizeStrategy.Fixed,
             FixedSize = 32L*1024*1024, MaxSize = 500L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── Audio ───────────────────────────────────────────────────────────────
         new() { Extension = ".wav", Category = FileCategory.Audio,
             Header = new byte[]{0x52,0x49,0x46,0x46}, Strategy = SizeStrategy.RiffSize,
             MaxSize = 200L*1024*1024, Quality = RecoveryQuality.Good },
+
         new() { Extension = ".flac", Category = FileCategory.Audio,
             Header = new byte[]{0x66,0x4C,0x61,0x43}, Strategy = SizeStrategy.Fixed,
             FixedSize = 16L*1024*1024, MaxSize = 100L*1024*1024, Quality = RecoveryQuality.Fair },
+
         new() { Extension = ".mp3", Category = FileCategory.Audio,
             Header = new byte[]{0x49,0x44,0x33}, Strategy = SizeStrategy.Fixed,
             FixedSize = 8L*1024*1024, MaxSize = 50L*1024*1024, Quality = RecoveryQuality.Fair },

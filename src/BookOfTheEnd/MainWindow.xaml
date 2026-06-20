@@ -39,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.5.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.6.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -262,6 +262,28 @@
                             <CheckBox Content="Archives"  IsChecked="{Binding IncludeArchives}"  Margin="0,0,16,6" />
                             <CheckBox Content="Other"     IsChecked="{Binding IncludeOther}"     Margin="0,0,0,6"  />
                         </WrapPanel>
+
+                        <!-- Session restore banner -->
+                        <Border CornerRadius="8" Padding="12,10" Margin="0,14,0,0"
+                                Background="{DynamicResource SurfaceAltBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                                Visibility="{Binding HasLastSession, Converter={StaticResource BoolVis}}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Last session" Style="{StaticResource Caption}"
+                                               Foreground="{DynamicResource AccentBrush}" />
+                                    <TextBlock Text="{Binding LastSessionSummary}" Style="{StaticResource Body}"
+                                               TextWrapping="Wrap" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Content="Restore" Style="{StaticResource AccentButton}"
+                                            Command="{Binding RestoreSessionCommand}" MinWidth="80" />
+                                    <Button Content="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                            Padding="8,6" Margin="6,0,0,0" ToolTip="Dismiss"
+                                            Command="{Binding DismissSessionCommand}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
 
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0" VerticalAlignment="Center">
                             <Button Style="{StaticResource AccentButton}" Command="{Binding StartScanCommand}"

@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly PresetService _presetService;
     private readonly UpdateService _updateService;
     private readonly StorageHealthService _storageHealth;
+    private readonly SessionService _sessionService;
     private readonly LoggingService _log;
 
     private ScanController? _controller;
@@ -60,6 +61,9 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateService updateService,
         StorageHealthService storageHealth,
         SurfaceScanService surfaceScan,
+        SessionService sessionService,
+        SmartHistoryService smartHistory,
+        DriveImageService driveImage,
         LoggingService log)
     {
         _driveService = driveService;
@@ -69,9 +73,10 @@ public sealed partial class MainViewModel : ObservableObject
         _presetService = presetService;
         _updateService = updateService;
         _storageHealth = storageHealth;
+        _sessionService = sessionService;
         _log = log;
 
-        Health = new HealthViewModel(storageHealth, surfaceScan, log);
+        Health = new HealthViewModel(storageHealth, surfaceScan, smartHistory, driveImage, log);
 
         DrivesView = CollectionViewSource.GetDefaultView(Drives);
         DrivesView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(DriveModel.GroupName)));
@@ -134,6 +139,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private string _searchText = "";
 
+    // --- Session restore ---
+    [ObservableProperty] private bool _hasLastSession;
+    [ObservableProperty] private string _lastSessionSummary = "";
+
     // --- Scan state ---
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
@@ -172,7 +181,47 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshDrives();
         SelectedDrive = Drives.FirstOrDefault(d => d.IsReady) ?? Drives.FirstOrDefault();
         LoadPresets();
+        RefreshSessionBanner();
         StatusMessage = "Ready. Select a drive and choose Quick or Deep scan.";
+    }
+
+    private void RefreshSessionBanner()
+    {
+        var session = _sessionService.HasSession ? _sessionService.Load() : null;
+        if (session is null) { HasLastSession = false; return; }
+        HasLastSession = true;
+        LastSessionSummary =
+            $"{session.TotalFound:N0} files from {session.DriveLetter}:  ·  " +
+            $"saved {session.SavedAt:ddd d MMM, h:mm tt}  ·  {session.ScanType} scan";
+    }
+
+    [RelayCommand]
+    private void RestoreSession()
+    {
+        var session = _sessionService.Load();
+        if (session is null) return;
+
+        _results.Clear();
+        lock (_pendingGate) _pending.Clear();
+        _totalFound = 0;
+        OnPropertyChanged(nameof(ResultCount));
+
+        var files = _sessionService.ToFiles(session);
+        foreach (var f in files)
+            _results.Add(new RecoverableFileViewModel(f));
+
+        FilesFound = _results.Count;
+        OnPropertyChanged(nameof(ResultCount));
+        ActiveTab = AppTab.Results;
+        StatusMessage = $"Session restored: {_results.Count:N0} file(s) from {session.DriveLetter}: ({session.ScanType} scan, {session.SavedAt:d MMM yyyy}).";
+    }
+
+    [RelayCommand]
+    private void DismissSession()
+    {
+        _sessionService.Delete();
+        HasLastSession = false;
+        LastSessionSummary = "";
     }
 
     private void LoadPresets()
@@ -270,6 +319,14 @@ public sealed partial class MainViewModel : ObservableObject
             _controller?.Dispose();
             _controller = null;
             OnPropertyChanged(nameof(ResultCount));
+
+            if (_results.Count > 0 && SelectedDrive is { } savedDrive)
+            {
+                _sessionService.Save(savedDrive.Letter,
+                    IsDeepScan ? ScanType.Deep : ScanType.Quick,
+                    _results.Select(vm => vm.Model));
+                RefreshSessionBanner();
+            }
         }
     }
 
