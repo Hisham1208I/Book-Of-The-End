@@ -47,6 +47,8 @@
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="CancelButton" Content="Cancel" Width="100" Click="OnCancel" />
+            <Button x:Name="ActionButton" Content="Open Folder" Width="110" Margin="8,0,0,0"
+                    Visibility="Collapsed" Click="OnAction" />
             <Button x:Name="OkButton" Content="OK" Style="{StaticResource AccentButton}" Width="110"
                     Margin="8,0,0,0" Click="OnOk" IsDefault="True" />
         </StackPanel>

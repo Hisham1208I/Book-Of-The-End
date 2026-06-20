@@ -130,6 +130,39 @@ public static class FileSignatures
         new() { Extension = ".mp3", Category = FileCategory.Audio,
             Header = new byte[]{0x49,0x44,0x33}, Strategy = SizeStrategy.Fixed,
             FixedSize = 8L*1024*1024, MaxSize = 50L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── Databases ───────────────────────────────────────────────────────────
+        // SQLite: "SQLite format 3\0" — unique 16-byte magic
+        new() { Extension = ".db", Category = FileCategory.Document,
+            Header = new byte[]{0x53,0x51,0x4C,0x69,0x74,0x65,0x20,0x66,
+                                0x6F,0x72,0x6D,0x61,0x74,0x20,0x33,0x00},
+            Strategy = SizeStrategy.Fixed,
+            FixedSize = 2L*1024*1024, MaxSize = 50L*1024*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // Microsoft Outlook Personal Folders (.pst / .ost): "!BDN" magic
+        new() { Extension = ".pst", Category = FileCategory.Document,
+            Header = new byte[]{0x21,0x42,0x44,0x4E},
+            Strategy = SizeStrategy.Fixed,
+            FixedSize = 16L*1024*1024, MaxSize = 50L*1024*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── More audio ──────────────────────────────────────────────────────────
+        // OGG Vorbis / Opus / Theora: "OggS" capture pattern
+        new() { Extension = ".ogg", Category = FileCategory.Audio,
+            Header = new byte[]{0x4F,0x67,0x67,0x53},
+            Strategy = SizeStrategy.Fixed,
+            FixedSize = 8L*1024*1024, MaxSize = 150L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── More images ─────────────────────────────────────────────────────────
+        // TIFF big-endian (Motorola byte order "MM\x00\x2A"): covers Nikon/Phase One RAW
+        new() { Extension = ".tif", Category = FileCategory.Image,
+            Header = new byte[]{0x4D,0x4D,0x00,0x2A}, Strategy = SizeStrategy.Fixed,
+            FixedSize = 8L*1024*1024, MaxSize = 120L*1024*1024, Quality = RecoveryQuality.Fair },
+
+        // ── More video ──────────────────────────────────────────────────────────
+        // MOV / QuickTime: ISO BMFF with major brand "qt  " at offset 8
+        new() { Extension = ".mov", Category = FileCategory.Video,
+            Header = new byte[]{0x71,0x74,0x20,0x20}, HeaderOffset = 8,
+            Strategy = SizeStrategy.BoxSize, MaxSize = 8L*1024*1024*1024, Quality = RecoveryQuality.Good },
     };
 
     /// <summary>Largest header offset+length, used to size inter-chunk overlap.</summary>

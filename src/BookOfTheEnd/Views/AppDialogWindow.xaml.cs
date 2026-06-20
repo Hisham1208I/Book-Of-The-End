@@ -12,6 +12,7 @@ public enum AppDialogKind
 public partial class AppDialogWindow : Window
 {
     private bool _confirmed;
+    private bool _actionClicked;
 
     public AppDialogWindow()
     {
@@ -28,6 +29,26 @@ public partial class AppDialogWindow : Window
     {
         var dialog = Create(owner, title, message, details, kind, confirm: false, okText: okText, cancelText: null);
         dialog.ShowDialog();
+    }
+
+    /// <summary>
+    /// Shows a message dialog with an extra action button (e.g. "Open Folder").
+    /// Returns true if the action button was clicked, false if OK was clicked.
+    /// </summary>
+    public static bool ShowMessageWithAction(
+        Window? owner,
+        string title,
+        string message,
+        string? details = null,
+        AppDialogKind kind = AppDialogKind.Info,
+        string actionText = "Open Folder",
+        string okText = "Close")
+    {
+        var dialog = Create(owner, title, message, details, kind, confirm: false, okText: okText, cancelText: null);
+        dialog.ActionButton.Content = actionText;
+        dialog.ActionButton.Visibility = System.Windows.Visibility.Visible;
+        dialog.ShowDialog();
+        return dialog._actionClicked;
     }
 
     public static bool ShowConfirm(
@@ -109,6 +130,13 @@ public partial class AppDialogWindow : Window
     private void OnOk(object sender, RoutedEventArgs e)
     {
         _confirmed = true;
+        DialogResult = true;
+        Close();
+    }
+
+    private void OnAction(object sender, RoutedEventArgs e)
+    {
+        _actionClicked = true;
         DialogResult = true;
         Close();
     }

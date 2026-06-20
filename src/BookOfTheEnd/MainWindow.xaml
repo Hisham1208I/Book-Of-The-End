@@ -39,7 +39,7 @@
                                    VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="— Data Recovery" Margin="6,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="v2.7.2" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
+                        <TextBlock Text="v2.8.0" Margin="8,1,0,0" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
@@ -407,6 +407,14 @@
                                 <ComboBoxItem Content="&gt; 100 MB" />
                                 <ComboBoxItem Content="&gt; 1 GB" />
                             </ComboBox>
+                            <TextBlock Text="Modified:" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="14,0,6,0" />
+                            <DatePicker VerticalAlignment="Center" Width="120"
+                                        SelectedDate="{Binding FilterDateFrom, Mode=TwoWay}"
+                                        ToolTip="From date (inclusive)" />
+                            <TextBlock Text="–" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="4,0" />
+                            <DatePicker VerticalAlignment="Center" Width="120"
+                                        SelectedDate="{Binding FilterDateTo, Mode=TwoWay}"
+                                        ToolTip="To date (inclusive)" />
                             <Button Content="Clear" Command="{Binding ClearFiltersCommand}"
                                     Margin="10,0,0,0" Padding="10,4" VerticalAlignment="Center" />
                             <Button Content="Export CSV" Command="{Binding ExportCsvCommand}"

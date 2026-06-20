@@ -141,11 +141,15 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _searchText = "";
 
     // --- Result filters ---
-    [ObservableProperty] private FileCategory? _filterCategory = null; // null = all categories
-    [ObservableProperty] private long _filterMinSize = 0;              // 0 = no size filter
+    [ObservableProperty] private FileCategory? _filterCategory = null;
+    [ObservableProperty] private long _filterMinSize = 0;
+    [ObservableProperty] private DateTime? _filterDateFrom = null;
+    [ObservableProperty] private DateTime? _filterDateTo = null;
 
     partial void OnFilterCategoryChanged(FileCategory? value) => ResultsView.Refresh();
     partial void OnFilterMinSizeChanged(long value) => ResultsView.Refresh();
+    partial void OnFilterDateFromChanged(DateTime? value) => ResultsView.Refresh();
+    partial void OnFilterDateToChanged(DateTime? value) => ResultsView.Refresh();
 
     // --- Session restore ---
     [ObservableProperty] private bool _hasLastSession;
@@ -312,12 +316,17 @@ public sealed partial class MainViewModel : ObservableObject
         _flushTimer.Start();
 
         var progress = new Progress<ScanProgress>(OnProgress);
+        var scanWatch = System.Diagnostics.Stopwatch.StartNew();
 
         try
         {
             _log.Info($"{engine.ScanType} scan started on {drive.Letter}: ({drive.FileSystem}).");
             await engine.ScanAsync(drive, options, _controller, progress, OnFileFound);
-            StatusMessage = $"{engine.ScanType} scan finished. {_results.Count + _pending.Count} item(s) found.";
+            scanWatch.Stop();
+            string dur = scanWatch.Elapsed.TotalHours >= 1
+                ? scanWatch.Elapsed.ToString(@"h\:mm\:ss")
+                : scanWatch.Elapsed.ToString(@"m\:ss");
+            StatusMessage = $"{engine.ScanType} scan finished in {dur}. {_results.Count + _pending.Count} item(s) found.";
         }
         catch (OperationCanceledException)
         {
@@ -483,10 +492,12 @@ public sealed partial class MainViewModel : ObservableObject
         var dialog = new OpenFolderDialog
         {
             Title = "Choose recovery destination",
-            Multiselect = false
+            Multiselect = false,
+            InitialDirectory = LoadLastRecoveryPath() ?? ""
         };
         if (dialog.ShowDialog() != true) return;
         string destination = dialog.FolderName;
+        SaveLastRecoveryPath(destination);
 
         var models = selected.Select(s => s.Model).ToList();
 
@@ -521,14 +532,19 @@ public sealed partial class MainViewModel : ObservableObject
             int ok = results.Count(r => r.Success);
             int fail = results.Count - ok;
             StatusMessage = $"Recovery complete: {ok} succeeded, {fail} failed. Report saved to logs folder.";
-            Views.AppDialogWindow.ShowMessage(
+
+            bool openFolder = Views.AppDialogWindow.ShowMessageWithAction(
                 Application.Current.MainWindow,
                 fail == 0 ? "Recovery complete" : "Recovery finished with errors",
                 fail == 0
                     ? $"{ok} file{(ok == 1 ? "" : "s")} recovered successfully."
                     : $"{ok} file{(ok == 1 ? "" : "s")} recovered, {fail} failed.",
                 $"Destination:\n{destination}",
-                fail == 0 ? Views.AppDialogKind.Success : Views.AppDialogKind.Warning);
+                fail == 0 ? Views.AppDialogKind.Success : Views.AppDialogKind.Warning,
+                actionText: "Open Folder");
+
+            if (openFolder)
+                System.Diagnostics.Process.Start("explorer.exe", destination);
         }
         catch (OperationCanceledException)
         {
@@ -711,6 +727,9 @@ public sealed partial class MainViewModel : ObservableObject
         if (FilterCategory is { } cat && vm.Category != cat) return false;
         if (FilterMinSize > 0 && vm.Size < FilterMinSize) return false;
 
+        if (FilterDateFrom is { } from && vm.Modified is { } modFrom && modFrom < from) return false;
+        if (FilterDateTo   is { } to   && vm.Modified is { } modTo   && modTo   > to.AddDays(1))  return false;
+
         return true;
     }
 
@@ -720,6 +739,8 @@ public sealed partial class MainViewModel : ObservableObject
         SearchText = "";
         FilterCategory = null;
         FilterMinSize = 0;
+        FilterDateFrom = null;
+        FilterDateTo = null;
     }
 
     [RelayCommand]
@@ -773,5 +794,32 @@ public sealed partial class MainViewModel : ObservableObject
         if (s.Contains(',') || s.Contains('"') || s.Contains('\n'))
             return "\"" + s.Replace("\"", "\"\"") + "\"";
         return s;
+    }
+
+    // --- Recovery destination memory ---
+    private static string RecoverySettingsPath => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Book of the End", "recovery-settings.json");
+
+    private static string? LoadLastRecoveryPath()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(RecoverySettingsPath)) return null;
+            var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(RecoverySettingsPath));
+            return doc.RootElement.TryGetProperty("lastDestination", out var p) ? p.GetString() : null;
+        }
+        catch { return null; }
+    }
+
+    private static void SaveLastRecoveryPath(string path)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(RecoverySettingsPath)!);
+            System.IO.File.WriteAllText(RecoverySettingsPath,
+                System.Text.Json.JsonSerializer.Serialize(new { lastDestination = path }));
+        }
+        catch { }
     }
 }
